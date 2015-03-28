@@ -6,11 +6,13 @@ module Ldap.Client
   , PortNumber
   , Ldap
   , LdapError(..)
+  , Type.ResultCode(..)
   , Async
   , with
     -- * Bind Request
   , Dn(..)
   , Password(..)
+  , BindError(..)
   , bind
   , bindEither
   , bindAsync
