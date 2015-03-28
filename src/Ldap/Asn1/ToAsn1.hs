@@ -201,7 +201,8 @@ instance ToAsn1 Filter where
     Substrings x      -> context 4 (toAsn1 x)
     GreaterOrEqual x  -> context 5 (toAsn1 x)
     LessOrEqual x     -> context 6 (toAsn1 x)
-    Present x         -> context 7 (toAsn1 x)
+    Present (AttributeDescription (LdapString x))
+                      -> other Asn1.Context 7 (Text.encodeUtf8 x)
     ApproxMatch x     -> context 8 (toAsn1 x)
     ExtensibleMatch x -> context 9 (toAsn1 x)
 

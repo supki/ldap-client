@@ -41,3 +41,19 @@ library
     , semigroups    >= 0.16
     , stm
     , text
+
+test-suite spec
+  default-language:
+    Haskell2010
+  type:
+    exitcode-stdio-1.0
+  hs-source-dirs:
+    test
+  main-is:
+    Spec.hs
+  other-modules:
+    Ldap.ClientSpec
+  build-depends:
+      base          >= 4.7 && < 5
+    , hspec
+    , ldap-client
