@@ -1,0 +1,27 @@
+function s:hdevtools_options(rgs)
+	return join(map(a:rgs, "'-g ' . v:val"))
+endfunction
+
+function s:discover_cabal_sandbox(glob)
+	let l:sandboxes = split(glob(a:glob, "."), "\n")
+	if len(l:sandboxes) > 0
+		return ['-no-user-package-db', '-package-db=' . l:sandboxes[-1]]
+	else
+		return []
+	endif
+endfunction
+
+let g:syntastic_haskell_hdevtools_args = s:hdevtools_options
+	\ (
+	\ [ '-isrc'
+	\ , '-ibin'
+	\ , '-itest'
+	\ , '-idist/build/autogen'
+	\ , '-DTEST'
+	\ , '-O0'
+	\ , '-fdefer-type-errors'
+	\ , '-Wall'
+	\ , '-fno-warn-unused-do-bind'
+	\ , '-fno-warn-type-defaults'
+	\ ] + s:discover_cabal_sandbox(".cabal-sandbox/*.conf.d")
+	\ )
