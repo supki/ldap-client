@@ -285,6 +285,7 @@ searchAsyncSTM l base opts flt attributes =
 searchResult :: Response -> Either SearchError [SearchEntry]
 searchResult (Type.SearchResultDone (Type.LdapResult code _ _ _) :| xs)
   | Type.Success <- code = Right (mapMaybe g xs)
+  | Type.AdminLimitExceeded <- code = Right (mapMaybe g xs)
   | otherwise = Left (SearchErrorCode code)
  where
   g (Type.SearchResultEntry (Type.LdapDn (Type.LdapString dn))
