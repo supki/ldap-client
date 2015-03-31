@@ -21,6 +21,7 @@ module Ldap.Client
   , Type.Scope(..)
   , Attr(..)
   , SearchEntry(..)
+  , SearchError(..)
   , search
   , searchEither
   , searchAsync

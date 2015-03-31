@@ -1,5 +1,5 @@
 ldap-client
------------
+===========
 
 **NOTE: This is work in progress. Don't use it! If you really need LDAP integration, check out [LDAP][LDAP]**
 
@@ -25,6 +25,15 @@ LDAP over TLS                | -           | ✔
 ```
 % git grep '\bString\b' | wc -l
 2
+```
+
+Testing
+-------
+
+```shell
+% sudo apt-get install npm
+% npm install ldapjs
+% cabal test
 ```
 
   [rfc4511]: https://tools.ietf.org/html/rfc4511
