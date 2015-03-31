@@ -1,6 +1,8 @@
 ldap-client
 -----------
 
+**NOTE: This is work in progress. Don't use it! If you really need LDAP integration, check out [LDAP][LDAP]**
+
 This library implements (the parts of) [RFC 4511][rfc4511]
 
           Feature            | RFC Section |   Support
@@ -26,3 +28,4 @@ LDAP over TLS                | -           | ✔
 ```
 
   [rfc4511]: https://tools.ietf.org/html/rfc4511
+  [LDAP]: https://hackage.haskell.org/package/LDAP
