@@ -17,17 +17,17 @@ spec = do
       search l f = Ldap.search l (Dn "o=localhost") (Ldap.scope WholeSubtree <> Ldap.typesOnly True) f []
 
   context "bind" $ do
-    it "can bind" $ do
+    it "binds as admin" $ do
       res <- locally $ \l -> do
         Ldap.bind l (Dn "cn=admin") (Password "secret")
       res `shouldBe` Right ()
 
-    it "can try to bind with a wrong password" $ do
+    it "tries to bind as admin with the wrong password, unsuccessfully" $ do
       res <- locally $ \l -> do
         Ldap.bind l (Dn "cn=admin") (Password "public")
       res `shouldBe` Left (Ldap.BindError (Ldap.BindErrorCode Ldap.InvalidCredentials))
 
-    it "can login as another user" $ do
+    it "binds as pikachu" $ do
       res <- locally $ \l -> do
         Ldap.bind l (Dn "cn=admin") (Password "secret")
         Ldap.SearchEntry udn _ : []
@@ -38,57 +38,118 @@ spec = do
   context "search" $ do
     it "cannot search as ‘pikachu’" $ do
       res <- locally $ \l -> do
-        Ldap.bind l (Dn "cn=pikachu,o=localhost") (Password "i-choose-you")
+        Ldap.bind l pikachu (Password "i-choose-you")
         search l (Present (Attr "password"))
       res `shouldBe` Left (Ldap.SearchError (Ldap.SearchErrorCode Ldap.InsufficientAccessRights))
 
-    it "can use ‘present’ filter" $ do
+    it "‘present’ filter" $ do
       res <- locally $ \l -> do
         res <- search l (Present (Attr "password"))
-        dns res `shouldBe` [Dn "cn=pikachu,o=localhost"]
+        dns res `shouldBe` [pikachu]
       res `shouldBe` Right ()
 
-    it "can use ‘equality match’ filter" $ do
+    it "‘equality match’ filter" $ do
       res <- locally $ \l -> do
         res <- search l (Attr "type" := "flying")
-        dns res `shouldMatchList` [Dn "cn=butterfree,o=localhost", Dn "cn=charizard,o=localhost"]
+        dns res `shouldMatchList`
+          [ butterfree
+          , charizard
+          ]
       res `shouldBe` Right ()
 
-    it "can use ‘and’ filter" $ do
+    it "‘and’ filter" $ do
       res <- locally $ \l -> do
         res <- search l (And [ Attr "type" := "fire"
                              , Attr "evolution" := "1"
                              ])
-        dns res `shouldBe` [Dn "cn=charmeleon,o=localhost"]
+        dns res `shouldBe` [charmeleon]
       res `shouldBe` Right ()
 
-    it "can use ‘or’ filter" $ do
+    it "‘or’ filter" $ do
       res <- locally $ \l -> do
         res <- search l (Or [ Attr "type" := "fire"
                             , Attr "evolution" := "1"
                             ])
         dns res `shouldMatchList`
-          [ Dn "cn=charizard,o=localhost"
-          , Dn "cn=charmeleon,o=localhost"
-          , Dn "cn=charmander,o=localhost"
-          , Dn "cn=metapod,o=localhost"
-          , Dn "cn=wartortle,o=localhost"
-          , Dn "cn=ivysaur,o=localhost"
+          [ ivysaur
+          , charizard
+          , charmeleon
+          , charmander
+          , wartortle
+          , metapod
           ]
       res `shouldBe` Right ()
 
-    it "can use ‘or’ filter" $ do
+    it "‘ge’ filter" $ do
+      res <- locally $ \l -> do
+        res <- search l (Attr "evolution" :>= "2")
+        dns res `shouldMatchList`
+          [ venusaur
+          , charizard
+          , blastoise
+          , butterfree
+          ]
+      res `shouldBe` Right ()
+
+    it "‘le’ filter" $ do
+      res <- locally $ \l -> do
+        res <- search l (Attr "evolution" :<= "0")
+        dns res `shouldMatchList`
+          [ bulbasaur
+          , charmander
+          , squirtle
+          , caterpie
+          , pikachu
+          ]
+      res `shouldBe` Right ()
+
+    it "‘not’ filter" $ do
       res <- locally $ \l -> do
         res <- search l (Not (Or [ Attr "type" := "fire"
                                  , Attr "evolution" :>= "1"
                                  ]))
         dns res `shouldMatchList`
-          [ Dn "cn=bulbasaur,o=localhost"
-          , Dn "cn=squirtle,o=localhost"
-          , Dn "cn=caterpie,o=localhost"
-          , Dn "cn=pikachu,o=localhost"
+          [ bulbasaur
+          , squirtle
+          , caterpie
+          , pikachu
           ]
       res `shouldBe` Right ()
+
+    it "‘substrings’ filter" $ do
+      res <- locally $ \l -> do
+        x <- search l (Attr "cn" :=* (Just "char", [], Nothing))
+        dns x `shouldMatchList`
+          [ charmander
+          , charmeleon
+          , charizard
+          ]
+        y <- search l (Attr "cn" :=* (Nothing, [], Just "saur"))
+        dns y `shouldMatchList`
+          [ bulbasaur
+          , ivysaur
+          , venusaur
+          ]
+        z <- search l (Attr "cn" :=* (Nothing, ["a", "o"], Just "e"))
+        dns z `shouldMatchList`
+          [ blastoise
+          , wartortle
+          ]
+      res `shouldBe` Right ()
+ where
+  bulbasaur = Dn "cn=bulbasaur,o=localhost"
+  ivysaur = Dn "cn=ivysaur,o=localhost"
+  venusaur = Dn "cn=venusaur,o=localhost"
+  charmander = Dn "cn=charmander,o=localhost"
+  charmeleon = Dn "cn=charmeleon,o=localhost"
+  charizard = Dn "cn=charizard,o=localhost"
+  squirtle = Dn "cn=squirtle,o=localhost"
+  wartortle = Dn "cn=wartortle,o=localhost"
+  blastoise = Dn "cn=blastoise,o=localhost"
+  caterpie = Dn "cn=caterpie,o=localhost"
+  metapod = Dn "cn=metapod,o=localhost"
+  butterfree = Dn "cn=butterfree,o=localhost"
+  pikachu = Dn "cn=pikachu,o=localhost"
 
 localhost :: Ldap.Host
 localhost = Ldap.Plain "localhost"
