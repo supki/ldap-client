@@ -50,7 +50,7 @@ test-suite spec
   hs-source-dirs:
     test
   main-is:
-    Main.hs
+    Spec.hs
   other-modules:
     Ldap.ClientSpec
   build-depends:

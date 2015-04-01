@@ -21,11 +21,25 @@ module SpecHelper
   , oddish
   ) where
 
+import Control.Exception (bracket)
+import System.IO (hGetLine)
+import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
+
 import Ldap.Client as Ldap
 
 
 locally :: (Ldap -> IO a) -> IO (Either LdapError a)
-locally = Ldap.with localhost port
+locally f =
+  bracket (do (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing
+                                  (Just [ ("PORT", show port)
+                                        , ("SSL_CERT", "./ssl/cert.pem")
+                                        , ("SSL_KEY", "./ssl/key.pem")
+                                        ])
+              hGetLine out
+              return h)
+          (\h -> do terminateProcess h
+                    waitForProcess h)
+          (\_ -> Ldap.with localhost port f)
 
 localhost :: Host
 localhost = Insecure "localhost"
