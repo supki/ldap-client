@@ -1,7 +1,7 @@
+**NOTE: This is work in progress. Don't use it! If you really need LDAP integration, check out [LDAP][LDAP]**
+
 ldap-client
 ===========
-
-**NOTE: This is work in progress. Don't use it! If you really need LDAP integration, check out [LDAP][LDAP]**
 
 This library implements (the parts of) [RFC 4511][rfc4511]
 
@@ -12,7 +12,7 @@ Unbind Operation             | 4.3         | ✔
 Notice of Disconnection      | 4.4.1       | ✘
 Search Operation             | 4.5         | ✔ (partial)
 Modify Operation             | 4.6         | ✘
-Add Operation                | 4.7         | ✘
+Add Operation                | 4.7         | ✔
 Delete Operation             | 4.8         | ✘
 Modify DN Operation          | 4.9         | ✘
 Compare Operation            | 4.10        | ✘

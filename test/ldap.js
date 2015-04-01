@@ -43,7 +43,7 @@ var pokemon = [
     attributes: { cn: 'butterfree', evolution: "2", type: ["bug", "flying"], }
   },
   { dn: 'cn=pikachu,o=localhost',
-    attributes: { cn: 'pikachu', evolution: "0", type: ["electic"], password: "i-choose-you" }
+    attributes: { cn: 'pikachu', evolution: "0", type: ["electric"], password: "i-choose-you" }
   },
   ];
 
@@ -81,6 +81,13 @@ server.search('o=localhost', [authorize], function(req, res, next) {
       res.send(pokemon[i]);
   };
 
+  res.end();
+  return next();
+});
+
+server.add('o=localhost', [], function(req, res, next) {
+  var attributes = req.toObject().attributes;
+  pokemon.push(req.toObject())
   res.end();
   return next();
 });

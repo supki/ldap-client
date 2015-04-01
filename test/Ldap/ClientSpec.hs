@@ -13,10 +13,15 @@ import           SpecHelper (port)
 
 spec :: Spec
 spec = do
+
   let locally = Ldap.with localhost port
-      search l f = Ldap.search l (Dn "o=localhost") (Ldap.scope WholeSubtree <> Ldap.typesOnly True) f []
+      search l f = Ldap.search l (Dn "o=localhost")
+                                 (Ldap.scope WholeSubtree <> Ldap.typesOnly True)
+                                 f
+                                 []
 
   context "bind" $ do
+
     it "binds as admin" $ do
       res <- locally $ \l -> do
         Ldap.bind l (Dn "cn=admin") (Password "secret")
@@ -36,6 +41,7 @@ spec = do
       res `shouldBe` Right ()
 
   context "search" $ do
+
     it "cannot search as ‘pikachu’" $ do
       res <- locally $ \l -> do
         Ldap.bind l pikachu (Password "i-choose-you")
@@ -136,6 +142,20 @@ spec = do
           , wartortle
           ]
       res `shouldBe` Right ()
+
+  context "add" $ do
+
+    it "adds an entry" $ do
+      res <- locally $ \l -> do
+        Ldap.add l vulpix
+                   [ (Attr "cn",        ["vulpix"])
+                   , (Attr "evolution", ["0"])
+                   , (Attr "type",      ["fire"])
+                   ]
+        res <- search l (Attr "cn" := "vulpix")
+        dns res `shouldBe` [vulpix]
+      res `shouldBe` Right ()
+
  where
   bulbasaur = Dn "cn=bulbasaur,o=localhost"
   ivysaur = Dn "cn=ivysaur,o=localhost"
@@ -150,6 +170,7 @@ spec = do
   metapod = Dn "cn=metapod,o=localhost"
   butterfree = Dn "cn=butterfree,o=localhost"
   pikachu = Dn "cn=pikachu,o=localhost"
+  vulpix = Dn "cn=vulpix,o=localhost"
 
 localhost :: Ldap.Host
 localhost = Ldap.Plain "localhost"

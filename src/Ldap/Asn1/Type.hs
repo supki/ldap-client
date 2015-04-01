@@ -20,6 +20,7 @@ data ProtocolClientOp =
     BindRequest Int8 LdapDn AuthenticationChoice
   | UnbindRequest
   | SearchRequest LdapDn Scope DerefAliases Int32 Int32 Bool Filter AttributeSelection
+  | AddRequest LdapDn AttributeList
     deriving (Show, Eq, Ord)
 
 data ProtocolServerOp =
@@ -27,6 +28,7 @@ data ProtocolServerOp =
   | SearchResultEntry LdapDn PartialAttributeList
   | SearchResultReference (NonEmpty Uri)
   | SearchResultDone (LdapResult)
+  | AddResponse LdapResult
     deriving (Show, Eq, Ord)
 
 data AuthenticationChoice = Simple ByteString
@@ -74,6 +76,9 @@ newtype MatchingRuleId = MatchingRuleId LdapString
     deriving (Show, Eq, Ord)
 
 newtype AttributeSelection = AttributeSelection [LdapString]
+    deriving (Show, Eq, Ord)
+
+newtype AttributeList = AttributeList [Attribute]
     deriving (Show, Eq, Ord)
 
 newtype PartialAttributeList = PartialAttributeList [PartialAttribute]
@@ -140,6 +145,9 @@ data AttributeValueAssertion = AttributeValueAssertion AttributeDescription Asse
     deriving (Show, Eq, Ord)
 
 newtype AssertionValue = AssertionValue ByteString
+    deriving (Show, Eq, Ord)
+
+data Attribute = Attribute AttributeDescription (NonEmpty AttributeValue)
     deriving (Show, Eq, Ord)
 
 data PartialAttribute = PartialAttribute AttributeDescription (Set AttributeValue)

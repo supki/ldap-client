@@ -37,6 +37,13 @@ module Ldap.Client
     -- * Unbind Request
   , unbindAsync
   , unbindAsyncSTM
+    -- * Add Request
+  , AttrList
+  , AddError(..)
+  , add
+  , addEither
+  , addAsync
+  , addAsyncSTM
     -- * Waiting for Request Completion
   , wait
   , waitSTM
@@ -159,8 +166,9 @@ input inq conn = flip fix [] $ \loop chunks -> do
           loop []
 
 output :: ToAsn1 a => TQueue a -> Connection -> IO b
-output out conn = forever $
-  Conn.connectionPut conn . encode . toAsn1 =<< atomically (readTQueue out)
+output out conn = forever $ do
+  msg <- atomically (readTQueue out)
+  Conn.connectionPut conn (encode (toAsn1 msg))
  where
   encode x = Asn1.encodeASN1' Asn1.DER (appEndo x [])
 
@@ -183,6 +191,9 @@ dispatch Ldap { client } inq outq =
              Type.SearchResultDone {} -> do
                let stack = Map.findWithDefault [] mid got
                traverse_ (\var -> putTMVar var (op :| stack)) (Map.lookup mid results)
+               return (Map.delete mid got, Map.delete mid results, counter)
+             Type.AddResponse {} -> do
+               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
       ])
 
@@ -429,6 +440,43 @@ unbindAsyncSTM l =
   void (sendRequest l die Type.UnbindRequest)
  where
   die = error "Ldap.Client: do not wait for the response to UnbindRequest"
+
+
+type AttrList f = [(Attr, f ByteString)]
+
+data AddError =
+    AddInvalidResponse Response
+  | AddErrorCode Type.ResultCode
+    deriving (Show, Eq, Typeable)
+
+instance Exception AddError
+
+add :: Ldap -> Dn -> AttrList NonEmpty -> IO ()
+add l dn as =
+  raise =<< addEither l dn as
+
+addEither :: Ldap -> Dn -> AttrList NonEmpty -> IO (Either AddError ())
+addEither l dn as =
+  wait =<< addAsync l dn as
+
+addAsync :: Ldap -> Dn -> AttrList NonEmpty -> IO (Async AddError ())
+addAsync l dn as =
+  atomically (addAsyncSTM l dn as)
+
+addAsyncSTM :: Ldap -> Dn -> AttrList NonEmpty -> STM (Async AddError ())
+addAsyncSTM l (Dn dn) as =
+  sendRequest l addResult
+                (Type.AddRequest (Type.LdapDn (Type.LdapString dn))
+                                 (Type.AttributeList (map f as)))
+ where
+  f (Attr x, xs) = Type.Attribute (Type.AttributeDescription (Type.LdapString x))
+                                  (fmap Type.AttributeValue xs)
+
+addResult :: NonEmpty Type.ProtocolServerOp -> Either AddError ()
+addResult (Type.AddResponse (Type.LdapResult code _ _ _) :| [])
+  | Type.Success <- code = Right ()
+  | otherwise = Left (AddErrorCode code)
+addResult res = Left (AddInvalidResponse res)
 
 
 wait :: Async e a -> IO (Either e a)

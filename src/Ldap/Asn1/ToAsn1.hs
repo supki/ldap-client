@@ -28,6 +28,8 @@ LDAPMessage ::= SEQUENCE {
           searchResEntry        SearchResultEntry,
           searchResDone         SearchResultDone,
           searchResRef          SearchResultReference,
+          addRequest            AddRequest,
+          addResponse           AddResponse,
           ... },
      controls       [0] Controls OPTIONAL }
 -}
@@ -86,6 +88,18 @@ instance ToAsn1 AssertionValue where
   toAsn1 (AssertionValue s) = single (Asn1.OctetString s)
 
 {- |
+PartialAttribute ::= SEQUENCE {
+     type       AttributeDescription,
+     vals       SET OF value AttributeValue }
+
+Attribute ::= PartialAttribute(WITH COMPONENTS {
+     ...,
+     vals (SIZE(1..MAX))})
+-}
+instance ToAsn1 Attribute where
+  toAsn1 (Attribute d xs) = sequence (toAsn1 d <> set (foldMap toAsn1 xs))
+
+{- |
 MatchingRuleId ::= LDAPString
 -}
 instance ToAsn1 MatchingRuleId where
@@ -136,6 +150,10 @@ SearchRequest ::= [APPLICATION 3] SEQUENCE {
      typesOnly       BOOLEAN,
      filter          Filter,
      attributes      AttributeSelection }
+
+AddRequest ::= [APPLICATION 8] SEQUENCE {
+     entry           LDAPDN,
+     attributes      AttributeList }
 -}
 instance ToAsn1 ProtocolClientOp where
   toAsn1 (BindRequest v n a) =
@@ -163,6 +181,8 @@ instance ToAsn1 ProtocolClientOp where
       DerefInSearching       -> 1
       DerefFindingBaseObject -> 2
       DerefAlways            -> 3
+  toAsn1 (AddRequest dn as) =
+    application 8 (toAsn1 dn <> toAsn1 as)
 
 {- |
 AuthenticationChoice ::= CHOICE {
@@ -237,8 +257,17 @@ instance ToAsn1 MatchingRuleAssertion where
     , context 4 (single (Asn1.Boolean b))
     ])
 
+{- |
+AttributeList ::= SEQUENCE OF attribute Attribute
+-}
+instance ToAsn1 AttributeList where
+  toAsn1 (AttributeList xs) = sequence (foldMap toAsn1 xs)
+
 sequence :: Endo [ASN1] -> Endo [ASN1]
 sequence = construction Asn1.Sequence
+
+set :: Endo [ASN1] -> Endo [ASN1]
+set = construction Asn1.Set
 
 application :: ASN1Tag -> Endo [ASN1] -> Endo [ASN1]
 application = construction . Asn1.Container Asn1.Application

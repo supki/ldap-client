@@ -32,6 +32,8 @@ LDAPMessage ::= SEQUENCE {
           searchResEntry        SearchResultEntry,
           searchResDone         SearchResultDone,
           searchResRef          SearchResultReference,
+          addRequest            AddRequest,
+          addResponse           AddResponse,
           ... },
      controls       [0] Controls OPTIONAL }
 -}
@@ -252,6 +254,12 @@ instance FromAsn1 ProtocolServerOp where
       result <- fromAsn1
       Asn1.End (Asn1.Container Asn1.Application 5) <- next
       return (SearchResultDone result)
+
+    , do
+      Asn1.Start (Asn1.Container Asn1.Application 9) <- next
+      result <- fromAsn1
+      Asn1.End (Asn1.Container Asn1.Application 9) <- next
+      return (AddResponse result)
     ]
 
 {- |
