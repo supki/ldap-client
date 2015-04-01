@@ -23,23 +23,18 @@ import           Data.Text (Text)             -- text
 import qualified Data.Text.Encoding as Text   -- text
 import qualified Data.Text.IO as Text         -- text
 import           Env                          -- envparse
-import qualified Ldap.Client as Ldap          -- ldap-client
-import           Ldap.Client                  -- ldap-client
-  ( LdapError
-  , Scope(..)
-  , Filter(..)
-  , Attr(..)
-  )
+import           Ldap.Client as Ldap          -- ldap-client
+import qualified Ldap.Client.Bind as Ldap     -- ldap-client
 import           System.Exit (die)            -- base
 import qualified System.IO as IO              -- base
 
 
 data Conf = Conf
   { host     :: String
-  , port     :: Ldap.PortNumber
-  , dn       :: Ldap.Dn
-  , password :: Ldap.Password
-  , base     :: Ldap.Dn
+  , port     :: PortNumber
+  , dn       :: Dn
+  , password :: Password
+  , base     :: Dn
   } deriving (Show, Eq)
 
 getConf :: IO Conf
@@ -65,20 +60,20 @@ login conf =
     fix $ \loop -> do
       uid <- prompt "Username: "
       us  <- Ldap.search l (base conf)
-                           (Ldap.scope WholeSubtree <> Ldap.typesOnly True)
+                           (scope WholeSubtree <> typesOnly True)
                            (And [ Attr "objectClass" := "Person"
                                 , Attr "uid" := Text.encodeUtf8 uid
                                 ])
                            []
       case us of
-        Ldap.SearchEntry udn _ : _ ->
+        SearchEntry udn _ : _ ->
           fix $ \loop' -> do
             pwd <- bracket_ hideOutput
                             showOutput
                             (do pwd <- prompt ("Password for ‘" <> uid <> "’: ")
                                 Text.putStr "\n"
                                 return pwd)
-            res <- Ldap.bindEither l udn (Ldap.Password (Text.encodeUtf8 pwd))
+            res <- Ldap.bindEither l udn (Password (Text.encodeUtf8 pwd))
             case res of
               Left  _ -> do again <- question "Invalid password. Try again? [y/n] "
                             when again loop'
