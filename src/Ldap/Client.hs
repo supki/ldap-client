@@ -31,15 +31,12 @@ module Ldap.Client
   , AttrList
   , AddError(..)
   , add
-  , addEither
-  , addAsync
-  , addAsyncSTM
     -- * Delete Request
   , DeleteError(..)
   , delete
-  , deleteEither
-  , deleteAsync
-  , deleteAsyncSTM
+    -- * Compare Request
+  , CompareError(..)
+  , compare
     -- * Waiting for Request Completion
   , wait
   , waitSTM
@@ -64,6 +61,7 @@ import           Data.Monoid (Endo(appEndo))
 import           Network.Connection (Connection)
 import qualified Network.Connection as Conn
 import qualified System.IO.Error as IO
+import           Prelude hiding (compare)
 
 import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
@@ -82,6 +80,7 @@ import           Ldap.Client.Search
   , Filter(..)
   , SearchEntry(..)
   )
+import           Ldap.Client.Compare (CompareError(..), compare)
 
 
 newLdap :: IO Ldap
@@ -95,6 +94,7 @@ data LdapError =
   | SearchError SearchError
   | AddError AddError
   | DeleteError DeleteError
+  | CompareError CompareError
     deriving (Show, Eq)
 
 -- | The entrypoint into LDAP.
@@ -117,6 +117,7 @@ with host port f = do
   , Handler (return . Left . SearchError)
   , Handler (return . Left . AddError)
   , Handler (return . Left . DeleteError)
+  , Handler (return . Left . CompareError)
   ]
  where
   params = Conn.ConnectionParams
@@ -197,6 +198,9 @@ dispatch Ldap { client } inq outq =
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
              Type.DeleteResponse {} -> do
+               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
+               return (Map.delete mid got, Map.delete mid results, counter)
+             Type.CompareResponse {} -> do
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
       ])

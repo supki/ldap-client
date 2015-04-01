@@ -46,7 +46,7 @@ spec = do
         dns res `shouldBe` []
       res `shouldBe` Right ()
 
-    it "tries to delete an unexisting entry, unsuccessfully" $ do
+    it "tries to delete an non-existing entry, unsuccessfully" $ do
       res <- locally $ \l -> do
         Ldap.delete l oddish
       res `shouldBe` Left (Ldap.DeleteError (Ldap.DeleteErrorCode Ldap.NoSuchObject))

@@ -22,6 +22,7 @@ data ProtocolClientOp =
   | SearchRequest LdapDn Scope DerefAliases Int32 Int32 Bool Filter AttributeSelection
   | AddRequest LdapDn AttributeList
   | DeleteRequest LdapDn
+  | CompareRequest LdapDn AttributeValueAssertion
     deriving (Show, Eq, Ord)
 
 data ProtocolServerOp =
@@ -31,6 +32,7 @@ data ProtocolServerOp =
   | SearchResultDone (LdapResult)
   | AddResponse LdapResult
   | DeleteResponse LdapResult
+  | CompareResponse LdapResult
     deriving (Show, Eq, Ord)
 
 data AuthenticationChoice = Simple ByteString

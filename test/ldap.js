@@ -98,9 +98,34 @@ server.add('o=localhost', [], function(req, res, next) {
 
 server.del('o=localhost', [], function(req, res, next) {
   for (var i = 0; i < pokemon.length; i++) {
-    if (req.dn.toString() == pokemon[i].dn) {
+    if (req.dn.toString() === pokemon[i].dn) {
       pokemon.splice(i, 1);
       res.end();
+      return next();
+    }
+  }
+
+  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
+});
+
+server.compare('o=localhost', [], function(req, res, next) {
+  for (var i = 0; i < pokemon.length; i++) {
+    if (req.dn.toString() === pokemon[i].dn) {
+      for (var attribute in pokemon[i].attributes) {
+        if (attribute === req.attribute) {
+          for (var j = 0; j < pokemon[i].attributes[attribute].length; j++) {
+            if (pokemon[i].attributes[attribute][j] === req.value) {
+              res.end(true);
+              return next();
+            }
+          }
+
+          res.end(false);
+          return next();
+        }
+      }
+
+      res.end(false);
       return next();
     }
   }

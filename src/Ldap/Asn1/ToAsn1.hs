@@ -156,6 +156,10 @@ AddRequest ::= [APPLICATION 8] SEQUENCE {
      attributes      AttributeList }
 
 DelRequest ::= [APPLICATION 10] LDAPDN
+
+CompareRequest ::= [APPLICATION 14] SEQUENCE {
+     entry           LDAPDN,
+     ava             AttributeValueAssertion }
 -}
 instance ToAsn1 ProtocolClientOp where
   toAsn1 (BindRequest v n a) =
@@ -187,6 +191,8 @@ instance ToAsn1 ProtocolClientOp where
     application 8 (toAsn1 dn <> toAsn1 as)
   toAsn1 (DeleteRequest (LdapDn (LdapString dn))) =
     other Asn1.Application 10 (Text.encodeUtf8 dn)
+  toAsn1 (CompareRequest dn av) =
+    application 14 (toAsn1 dn <> sequence (toAsn1 av))
 
 {- |
 AuthenticationChoice ::= CHOICE {

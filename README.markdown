@@ -15,7 +15,7 @@ Modify Operation             | 4.6         | ✘
 Add Operation                | 4.7         | ✔
 Delete Operation             | 4.8         | ✔
 Modify DN Operation          | 4.9         | ✘
-Compare Operation            | 4.10        | ✘
+Compare Operation            | 4.10        | ✔
 Abandon Operation            | 4.11        | ✘
 Extended Operation           | 4.12        | ✘
 IntermediateResponse Message | 4.13        | ✘

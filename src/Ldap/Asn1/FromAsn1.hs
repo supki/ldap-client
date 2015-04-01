@@ -237,6 +237,8 @@ SearchResultDone ::= [APPLICATION 5] LDAPResult
 AddResponse ::= [APPLICATION 9] LDAPResult
 
 DelResponse ::= [APPLICATION 11] LDAPResult
+
+CompareResponse ::= [APPLICATION 15] LDAPResult
 -}
 instance FromAsn1 ProtocolServerOp where
   fromAsn1 = asum
@@ -270,6 +272,12 @@ instance FromAsn1 ProtocolServerOp where
       result <- fromAsn1
       Asn1.End (Asn1.Container Asn1.Application 11) <- next
       return (DeleteResponse result)
+
+    , do
+      Asn1.Start (Asn1.Container Asn1.Application 15) <- next
+      result <- fromAsn1
+      Asn1.End (Asn1.Container Asn1.Application 15) <- next
+      return (CompareResponse result)
     ]
 
 {- |
