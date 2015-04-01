@@ -156,6 +156,20 @@ spec = do
         dns res `shouldBe` [vulpix]
       res `shouldBe` Right ()
 
+  context "delete" $ do
+
+    it "deletes an entry" $ do
+      res <- locally $ \l -> do
+        Ldap.delete l pikachu
+        res <- search l (Attr "cn" := "pikachu")
+        dns res `shouldBe` []
+      res `shouldBe` Right ()
+
+    it "tries to delete an unexisting entry, unsuccessfully" $ do
+      res <- locally $ \l -> do
+        Ldap.delete l oddish
+      res `shouldBe` Left (Ldap.DeleteError (Ldap.DeleteErrorCode Ldap.NoSuchObject))
+
  where
   bulbasaur = Dn "cn=bulbasaur,o=localhost"
   ivysaur = Dn "cn=ivysaur,o=localhost"
@@ -171,6 +185,7 @@ spec = do
   butterfree = Dn "cn=butterfree,o=localhost"
   pikachu = Dn "cn=pikachu,o=localhost"
   vulpix = Dn "cn=vulpix,o=localhost"
+  oddish = Dn "cn=oddish,o=localhost"
 
 localhost :: Ldap.Host
 localhost = Ldap.Plain "localhost"

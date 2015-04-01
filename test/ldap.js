@@ -92,6 +92,18 @@ server.add('o=localhost', [], function(req, res, next) {
   return next();
 });
 
+server.del('o=localhost', [], function(req, res, next) {
+  for (var i = 0; i < pokemon.length; i++) {
+    if (req.dn.toString() == pokemon[i].dn) {
+      pokemon.splice(i, 1);
+      res.end();
+      return next();
+    }
+  }
+
+  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
+});
+
 server.listen(port, function() {
   console.log("ldap://localhost:%d", port);
 });

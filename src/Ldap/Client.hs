@@ -44,6 +44,12 @@ module Ldap.Client
   , addEither
   , addAsync
   , addAsyncSTM
+    -- * Delete Request
+  , DeleteError(..)
+  , delete
+  , deleteEither
+  , deleteAsync
+  , deleteAsyncSTM
     -- * Waiting for Request Completion
   , wait
   , waitSTM
@@ -106,6 +112,8 @@ data LdapError =
   | ParseError Asn1.ASN1Error
   | BindError BindError
   | SearchError SearchError
+  | AddError AddError
+  | DeleteError DeleteError
     deriving (Show, Eq)
 
 -- | The entrypoint into LDAP.
@@ -126,6 +134,8 @@ with host port f = do
   , Handler (return . Left . ParseError)
   , Handler (return . Left . BindError)
   , Handler (return . Left . SearchError)
+  , Handler (return . Left . AddError)
+  , Handler (return . Left . DeleteError)
   ]
  where
   params = Conn.ConnectionParams
@@ -193,6 +203,9 @@ dispatch Ldap { client } inq outq =
                traverse_ (\var -> putTMVar var (op :| stack)) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
              Type.AddResponse {} -> do
+               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
+               return (Map.delete mid got, Map.delete mid results, counter)
+             Type.DeleteResponse {} -> do
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
       ])
@@ -472,11 +485,42 @@ addAsyncSTM l (Dn dn) as =
   f (Attr x, xs) = Type.Attribute (Type.AttributeDescription (Type.LdapString x))
                                   (fmap Type.AttributeValue xs)
 
-addResult :: NonEmpty Type.ProtocolServerOp -> Either AddError ()
+addResult :: Response -> Either AddError ()
 addResult (Type.AddResponse (Type.LdapResult code _ _ _) :| [])
   | Type.Success <- code = Right ()
   | otherwise = Left (AddErrorCode code)
 addResult res = Left (AddInvalidResponse res)
+
+
+data DeleteError =
+    DeleteInvalidResponse Response
+  | DeleteErrorCode Type.ResultCode
+    deriving (Show, Eq, Typeable)
+
+instance Exception DeleteError
+
+delete :: Ldap -> Dn -> IO ()
+delete l dn =
+  raise =<< deleteEither l dn
+
+deleteEither :: Ldap -> Dn -> IO (Either DeleteError ())
+deleteEither l dn =
+  wait =<< deleteAsync l dn
+
+deleteAsync :: Ldap -> Dn -> IO (Async DeleteError ())
+deleteAsync l dn =
+  atomically (deleteAsyncSTM l dn)
+
+deleteAsyncSTM :: Ldap -> Dn -> STM (Async DeleteError ())
+deleteAsyncSTM l (Dn dn) =
+  sendRequest l deleteResult
+                (Type.DeleteRequest (Type.LdapDn (Type.LdapString dn)))
+
+deleteResult :: Response -> Either DeleteError ()
+deleteResult (Type.DeleteResponse (Type.LdapResult code _ _ _) :| [])
+  | Type.Success <- code = Right ()
+  | otherwise = Left (DeleteErrorCode code)
+deleteResult res = Left (DeleteInvalidResponse res)
 
 
 wait :: Async e a -> IO (Either e a)

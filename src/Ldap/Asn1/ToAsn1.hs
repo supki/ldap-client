@@ -35,7 +35,7 @@ LDAPMessage ::= SEQUENCE {
 -}
 instance ToAsn1 op => ToAsn1 (LdapMessage op) where
   toAsn1 (LdapMessage i op mc) =
-    sequence (toAsn1 i <> toAsn1 op <> context 0 (optional mc))
+    sequence (toAsn1 i <> toAsn1 op <> maybe mempty (context 0 . toAsn1) mc)
 
 {- |
 MessageID ::= INTEGER (0 ..  maxInt)
@@ -154,6 +154,8 @@ SearchRequest ::= [APPLICATION 3] SEQUENCE {
 AddRequest ::= [APPLICATION 8] SEQUENCE {
      entry           LDAPDN,
      attributes      AttributeList }
+
+DelRequest ::= [APPLICATION 10] LDAPDN
 -}
 instance ToAsn1 ProtocolClientOp where
   toAsn1 (BindRequest v n a) =
@@ -183,6 +185,8 @@ instance ToAsn1 ProtocolClientOp where
       DerefAlways            -> 3
   toAsn1 (AddRequest dn as) =
     application 8 (toAsn1 dn <> toAsn1 as)
+  toAsn1 (DeleteRequest (LdapDn (LdapString dn))) =
+    other Asn1.Application 10 (Text.encodeUtf8 dn)
 
 {- |
 AuthenticationChoice ::= CHOICE {

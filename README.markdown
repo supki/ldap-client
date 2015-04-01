@@ -13,7 +13,7 @@ Notice of Disconnection      | 4.4.1       | ✘
 Search Operation             | 4.5         | ✔ (partial)
 Modify Operation             | 4.6         | ✘
 Add Operation                | 4.7         | ✔
-Delete Operation             | 4.8         | ✘
+Delete Operation             | 4.8         | ✔
 Modify DN Operation          | 4.9         | ✘
 Compare Operation            | 4.10        | ✘
 Abandon Operation            | 4.11        | ✘
