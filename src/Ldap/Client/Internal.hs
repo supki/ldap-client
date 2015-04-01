@@ -51,6 +51,7 @@ import qualified Ldap.Asn1.Type as Type
 data Host =
     Plain String
   | Secure String
+  | Insecure String
     deriving (Show, Eq, Ord)
 
 data Ldap = Ldap

@@ -122,14 +122,20 @@ with host port f = do
   params = Conn.ConnectionParams
     { Conn.connectionHostname =
         case host of
-          Plain  h -> h
-          Secure h -> h
+          Plain    h -> h
+          Secure   h -> h
+          Insecure h -> h
     , Conn.connectionPort = port
     , Conn.connectionUseSecure =
         case host of
           Plain  _ -> Nothing
           Secure _ -> Just Conn.TLSSettingsSimple
             { Conn.settingDisableCertificateValidation = False
+            , Conn.settingDisableSession = False
+            , Conn.settingUseServerName = False
+            }
+          Insecure _ -> Just Conn.TLSSettingsSimple
+            { Conn.settingDisableCertificateValidation = True
             , Conn.settingDisableSession = False
             , Conn.settingUseServerName = False
             }

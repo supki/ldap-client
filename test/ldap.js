@@ -1,8 +1,12 @@
 #!/usr/bin/env nodejs
 
+var fs = require('fs');
 var ldapjs = require('ldapjs');
-var server = ldapjs.createServer();
-var port = process.env.PORT
+
+var port = process.env.PORT;
+var certificate = fs.readFileSync(process.env.SSL_CERT, "utf-8");
+var key = fs.readFileSync(process.env.SSL_KEY, "utf-8");
+var server = ldapjs.createServer({certificate: certificate, key: key});
 
 // <http://bulbapedia.bulbagarden.net/wiki/List_of_Pok%C3%A9mon_by_National_Pok%C3%A9dex_number>
 var pokemon = [
@@ -105,5 +109,5 @@ server.del('o=localhost', [], function(req, res, next) {
 });
 
 server.listen(port, function() {
-  console.log("ldap://localhost:%d", port);
+  console.log("ldaps://localhost:%d", port);
 });

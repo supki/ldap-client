@@ -28,7 +28,7 @@ locally :: (Ldap -> IO a) -> IO (Either LdapError a)
 locally = Ldap.with localhost port
 
 localhost :: Host
-localhost = Plain "localhost"
+localhost = Insecure "localhost"
 
 port :: Num a => a
 port = 24620

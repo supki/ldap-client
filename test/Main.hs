@@ -12,7 +12,11 @@ import           SpecHelper (port)
 
 main :: IO ()
 main =
-  bracket (do (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing (Just [("PORT", show port)])
+  bracket (do (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing
+                                  (Just [ ("PORT", show port)
+                                        , ("SSL_CERT", "./ssl/cert.pem")
+                                        , ("SSL_KEY", "./ssl/key.pem")
+                                        ])
               hGetLine out
               return h)
           (\h -> do terminateProcess h
