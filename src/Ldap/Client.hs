@@ -36,6 +36,9 @@ module Ldap.Client
   , delete
     -- * Compare Operation
   , compare
+    -- * Extended Operation
+  , Oid(..)
+  , extended
     -- * Waiting for Operation Completion
   , wait
   , waitSTM
@@ -82,6 +85,7 @@ import           Ldap.Client.Modify (Operation(..), modify)
 import           Ldap.Client.Add (add)
 import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
+import           Ldap.Client.Extended (extended)
 
 
 newLdap :: IO Ldap
@@ -197,6 +201,9 @@ dispatch Ldap { client } inq outq =
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
              Type.CompareResponse {} -> do
+               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
+               return (Map.delete mid got, Map.delete mid results, counter)
+             Type.ExtendedResponse {} -> do
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
       ])

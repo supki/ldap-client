@@ -8,6 +8,7 @@ module Ldap.Client.Internal
   , ClientMessage(..)
   , Type.ResultCode(..)
   , Async
+  , Oid(..)
   , AttrList
     -- * Waiting for Request Completion
   , wait
@@ -59,6 +60,10 @@ instance Functor Async where
 
 newtype Dn = Dn Text
     deriving (Show, Eq)
+
+newtype Oid = Oid ByteString
+    deriving (Show, Eq)
+
 newtype Password = Password ByteString
     deriving (Show, Eq)
 

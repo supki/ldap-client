@@ -23,6 +23,7 @@ data ProtocolClientOp =
   | DeleteRequest LdapDn
   | CompareRequest LdapDn AttributeValueAssertion
   | ModifyRequest LdapDn [(Operation, PartialAttribute)]
+  | ExtendedRequest LdapOid (Maybe ByteString)
     deriving (Show, Eq, Ord)
 
 data ProtocolServerOp =
@@ -34,6 +35,7 @@ data ProtocolServerOp =
   | AddResponse LdapResult
   | DeleteResponse LdapResult
   | CompareResponse LdapResult
+  | ExtendedResponse LdapResult (Maybe LdapOid) (Maybe ByteString)
     deriving (Show, Eq, Ord)
 
 data AuthenticationChoice = Simple ByteString

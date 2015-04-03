@@ -63,6 +63,14 @@ instance FromAsn1 LdapString where
       Left  _ -> empty
 
 {- |
+LDAPOID ::= OCTET STRING -- Constrained to <numericoid>
+-}
+instance FromAsn1 LdapOid where
+  fromAsn1 = do
+    Asn1.OctetString s <- next
+    return (LdapOid s)
+
+{- |
 LDAPDN ::= LDAPString
 -}
 instance FromAsn1 LdapDn where
@@ -250,6 +258,17 @@ instance FromAsn1 ProtocolServerOp where
     , fmap AddResponse (app 9)
     , fmap DeleteResponse (app 11)
     , fmap CompareResponse (app 15)
+    , do
+      Asn1.Start (Asn1.Container Asn1.Application 24) <- next
+      res <- fromAsn1
+      name <- optional $ do
+        Asn1.Other Asn1.Context 0 s <- next
+        return s
+      value <- optional $ do
+        Asn1.Other Asn1.Context 1 s <- next
+        return s
+      Asn1.End (Asn1.Container Asn1.Application 24) <- next
+      return (ExtendedResponse res (fmap LdapOid name) value)
     ]
    where
     app l = do

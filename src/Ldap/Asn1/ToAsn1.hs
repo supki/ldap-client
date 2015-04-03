@@ -175,6 +175,11 @@ DelRequest ::= [APPLICATION 10] LDAPDN
 CompareRequest ::= [APPLICATION 14] SEQUENCE {
      entry           LDAPDN,
      ava             AttributeValueAssertion }
+
+ExtendedRequest ::= [APPLICATION 23] SEQUENCE {
+     requestName      [0] LDAPOID,
+     requestValue     [1] OCTET STRING OPTIONAL }
+
 -}
 instance ToAsn1 ProtocolClientOp where
   toAsn1 (BindRequest v n a) =
@@ -216,6 +221,11 @@ instance ToAsn1 ProtocolClientOp where
     other Asn1.Application 10 (Text.encodeUtf8 dn)
   toAsn1 (CompareRequest dn av) =
     application 14 (toAsn1 dn <> sequence (toAsn1 av))
+  toAsn1 (ExtendedRequest (LdapOid oid) mv) =
+    application 23 (fold
+     [ other Asn1.Context 0 oid
+     , maybe mempty (other Asn1.Context 1) mv
+     ])
 
 {- |
 AuthenticationChoice ::= CHOICE {

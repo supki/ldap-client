@@ -89,50 +89,6 @@ server.search('o=localhost', [authorize], function(req, res, next) {
   return next();
 });
 
-server.add('o=localhost', [], function(req, res, next) {
-  var attributes = req.toObject().attributes;
-  pokemon.push(req.toObject())
-  res.end();
-  return next();
-});
-
-server.del('o=localhost', [], function(req, res, next) {
-  for (var i = 0; i < pokemon.length; i++) {
-    if (req.dn.toString() === pokemon[i].dn) {
-      pokemon.splice(i, 1);
-      res.end();
-      return next();
-    }
-  }
-
-  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
-});
-
-server.compare('o=localhost', [], function(req, res, next) {
-  for (var i = 0; i < pokemon.length; i++) {
-    if (req.dn.toString() === pokemon[i].dn) {
-      for (var attribute in pokemon[i].attributes) {
-        if (attribute === req.attribute) {
-          for (var j = 0; j < pokemon[i].attributes[attribute].length; j++) {
-            if (pokemon[i].attributes[attribute][j] === req.value) {
-              res.end(true);
-              return next();
-            }
-          }
-
-          res.end(false);
-          return next();
-        }
-      }
-
-      res.end(false);
-      return next();
-    }
-  }
-
-  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
-});
-
 // Javascript is helpless
 Array.prototype.diff = function(arr) {
   return this.filter(function(idx) { return arr.indexOf(idx) < 0; });
@@ -181,6 +137,50 @@ server.modify('o=localhost', [], function(req, res, next) {
 
   res.end();
   return next(new ldapjs.NoSuchObjectError(dn));
+});
+
+server.add('o=localhost', [], function(req, res, next) {
+  var attributes = req.toObject().attributes;
+  pokemon.push(req.toObject())
+  res.end();
+  return next();
+});
+
+server.del('o=localhost', [], function(req, res, next) {
+  for (var i = 0; i < pokemon.length; i++) {
+    if (req.dn.toString() === pokemon[i].dn) {
+      pokemon.splice(i, 1);
+      res.end();
+      return next();
+    }
+  }
+
+  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
+});
+
+server.compare('o=localhost', [], function(req, res, next) {
+  for (var i = 0; i < pokemon.length; i++) {
+    if (req.dn.toString() === pokemon[i].dn) {
+      for (var attribute in pokemon[i].attributes) {
+        if (attribute === req.attribute) {
+          for (var j = 0; j < pokemon[i].attributes[attribute].length; j++) {
+            if (pokemon[i].attributes[attribute][j] === req.value) {
+              res.end(true);
+              return next();
+            }
+          }
+
+          res.end(false);
+          return next();
+        }
+      }
+
+      res.end(false);
+      return next();
+    }
+  }
+
+  return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
 });
 
 server.listen(port, function() {

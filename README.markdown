@@ -10,19 +10,22 @@ This library implements (the parts of) [RFC 4511][rfc4511]
 Bind Operation               | 4.2         | ✔
 Unbind Operation             | 4.3         | ✔
 Notice of Disconnection      | 4.4.1       | ✘
-Search Operation             | 4.5         | ✔†
+Search Operation             | 4.5         | ✔\*
 Modify Operation             | 4.6         | ✔
 Add Operation                | 4.7         | ✔
 Delete Operation             | 4.8         | ✔
 Modify DN Operation          | 4.9         | ✘
 Compare Operation            | 4.10        | ✔
 Abandon Operation            | 4.11        | ✘
-Extended Operation           | 4.12        | ✘
+Extended Operation           | 4.12        | ✔
 IntermediateResponse Message | 4.13        | ✘
-StartTLS Operation           | 4.14        | ✘
+StartTLS Operation           | 4.14        | ✔†
 LDAP over TLS                | -           | ✔
 
-†: approximate and extensible matches are untested, so probably do not work
+\*: approximate and extensible matches are untested, so probably do not work
+†: only serves as an example of Extended Operation, meaning that it does not change
+connection's state on success, so it's useless for all practical purposes.
+In other words, use LDAP over TLS instead.
 
 ```
 % git grep '\bString\b' | wc -l
