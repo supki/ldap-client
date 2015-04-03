@@ -6,13 +6,12 @@ module Ldap.Asn1.FromAsn1
   , next
   ) where
 
-import           Control.Applicative (Alternative(..), optional)
-import           Control.Monad ((>=>), MonadPlus(..))
+import           Control.Applicative (Alternative(..), liftA2, optional)
+import           Control.Monad (MonadPlus(..), (>=>), guard)
 import           Data.ASN1.Types (ASN1)
 import qualified Data.ASN1.Types as Asn1
 import           Data.Foldable (asum)
 import           Data.List.NonEmpty (some1)
-import qualified Data.Set as Set
 import qualified Data.Text.Encoding as Text
 
 import           Ldap.Asn1.Type
@@ -96,7 +95,7 @@ instance FromAsn1 PartialAttribute where
     vs <- many fromAsn1
     Asn1.End Asn1.Set <- next
     Asn1.End Asn1.Sequence <- next
-    return (PartialAttribute d (Set.fromList vs))
+    return (PartialAttribute d vs)
 
 {- |
 LDAPResult ::= SEQUENCE {
@@ -234,6 +233,8 @@ SearchResultEntry ::= [APPLICATION 4] SEQUENCE {
 
 SearchResultDone ::= [APPLICATION 5] LDAPResult
 
+ModifyResponse ::= [APPLICATION 7] LDAPResult
+
 AddResponse ::= [APPLICATION 9] LDAPResult
 
 DelResponse ::= [APPLICATION 11] LDAPResult
@@ -242,43 +243,22 @@ CompareResponse ::= [APPLICATION 15] LDAPResult
 -}
 instance FromAsn1 ProtocolServerOp where
   fromAsn1 = asum
-    [ do
-      Asn1.Start (Asn1.Container Asn1.Application 1) <- next
-      result <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 1) <- next
-      return (BindResponse result Nothing)
-
-    , do
-      Asn1.Start (Asn1.Container Asn1.Application 4) <- next
-      ldapDn <- fromAsn1
-      partialAttributeList <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 4) <- next
-      return (SearchResultEntry ldapDn partialAttributeList)
-
-    , do
-      Asn1.Start (Asn1.Container Asn1.Application 5) <- next
-      result <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 5) <- next
-      return (SearchResultDone result)
-
-    , do
-      Asn1.Start (Asn1.Container Asn1.Application 9) <- next
-      result <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 9) <- next
-      return (AddResponse result)
-
-    , do
-      Asn1.Start (Asn1.Container Asn1.Application 11) <- next
-      result <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 11) <- next
-      return (DeleteResponse result)
-
-    , do
-      Asn1.Start (Asn1.Container Asn1.Application 15) <- next
-      result <- fromAsn1
-      Asn1.End (Asn1.Container Asn1.Application 15) <- next
-      return (CompareResponse result)
+    [ fmap (\res -> BindResponse res Nothing) (app 1)
+    , fmap (uncurry SearchResultEntry) (app 4)
+    , fmap SearchResultDone (app 5)
+    , fmap ModifyResponse (app 7)
+    , fmap AddResponse (app 9)
+    , fmap DeleteResponse (app 11)
+    , fmap CompareResponse (app 15)
     ]
+   where
+    app l = do
+      Asn1.Start (Asn1.Container Asn1.Application x) <- next
+      guard (x == l)
+      res <- fromAsn1
+      Asn1.End (Asn1.Container Asn1.Application y) <- next
+      guard (y == l)
+      return res
 
 {- |
 PartialAttributeList ::= SEQUENCE OF partialAttribute PartialAttribute
@@ -289,6 +269,9 @@ instance FromAsn1 PartialAttributeList where
     xs <- many fromAsn1
     Asn1.End Asn1.Sequence <- next
     return (PartialAttributeList xs)
+
+instance (FromAsn1 a, FromAsn1 b) => FromAsn1 (a, b) where
+  fromAsn1 = liftA2 (,) fromAsn1 fromAsn1
 
 
 newtype Parser s a = Parser { unParser :: s -> Maybe (s, a) }

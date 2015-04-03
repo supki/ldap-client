@@ -47,7 +47,7 @@ var pokemon = [
     attributes: { cn: 'butterfree', evolution: "2", type: ["bug", "flying"], }
   },
   { dn: 'cn=pikachu,o=localhost',
-    attributes: { cn: 'pikachu', evolution: "0", type: ["electric"], password: "i-choose-you" }
+    attributes: { cn: 'pikachu', evolution: "0", type: ["electric"], password: ["i-choose-you"] }
   },
   ];
 
@@ -131,6 +131,56 @@ server.compare('o=localhost', [], function(req, res, next) {
   }
 
   return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
+});
+
+// Javascript is helpless
+Array.prototype.diff = function(arr) {
+  return this.filter(function(idx) { return arr.indexOf(idx) < 0; });
+};
+
+server.modify('o=localhost', [], function(req, res, next) {
+  var dn = req.dn.toString();
+
+  for (var i = 0; i < pokemon.length; i++) {
+    if (pokemon[i].dn === dn) {
+      for (var j = 0; j < req.changes.length; j++) {
+        var m = req.changes[j].modification;
+
+        switch (req.changes[j].operation) {
+          case 'add':
+            pokemon[i].attributes[m.type] = pokemon[i].attributes[m.type].concat(m.vals);
+            break;
+          case 'delete':
+            if (m.type === "password") {
+              return next(new ldapjs.UnwillingToPerformError('cannot delete password'));
+            } else {
+              if (m.vals === 0) {
+                delete pokemon[i].attributes[m.type];
+              } else {
+                pokemon[i].attributes[m.type] = pokemon[i].attributes[m.type].diff(m.vals);
+                if (pokemon[i].attributes[m.type].length === 0) {
+                  delete pokemon[i].attributes[m.type];
+                }
+              }
+            }
+            break;
+          case 'replace':
+            if (m.vals === 0) {
+              delete pokemon[i].attributes[m.type];
+            } else {
+              pokemon[i].attributes[m.type] = m.vals;
+            }
+            break;
+        }
+      }
+
+      res.end();
+      return next();
+    }
+  }
+
+  res.end();
+  return next(new ldapjs.NoSuchObjectError(dn));
 });
 
 server.listen(port, function() {

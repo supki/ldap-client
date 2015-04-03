@@ -3,7 +3,6 @@ module Ldap.Asn1.Type where
 import Data.ByteString (ByteString)
 import Data.Int (Int8, Int32)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Set (Set)
 import Data.Text (Text)
 
 
@@ -23,6 +22,7 @@ data ProtocolClientOp =
   | AddRequest LdapDn AttributeList
   | DeleteRequest LdapDn
   | CompareRequest LdapDn AttributeValueAssertion
+  | ModifyRequest LdapDn [(Operation, PartialAttribute)]
     deriving (Show, Eq, Ord)
 
 data ProtocolServerOp =
@@ -30,6 +30,7 @@ data ProtocolServerOp =
   | SearchResultEntry LdapDn PartialAttributeList
   | SearchResultReference (NonEmpty Uri)
   | SearchResultDone (LdapResult)
+  | ModifyResponse LdapResult
   | AddResponse LdapResult
   | DeleteResponse LdapResult
   | CompareResponse LdapResult
@@ -154,7 +155,7 @@ newtype AssertionValue = AssertionValue ByteString
 data Attribute = Attribute AttributeDescription (NonEmpty AttributeValue)
     deriving (Show, Eq, Ord)
 
-data PartialAttribute = PartialAttribute AttributeDescription (Set AttributeValue)
+data PartialAttribute = PartialAttribute AttributeDescription [AttributeValue]
     deriving (Show, Eq, Ord)
 
 newtype LdapDn = LdapDn LdapString
@@ -164,6 +165,12 @@ newtype ReferralUris = ReferralUris (NonEmpty Uri)
     deriving (Show, Eq, Ord)
 
 newtype Uri = Uri LdapString
+    deriving (Show, Eq, Ord)
+
+data Operation =
+    Add
+  | Delete
+  | Replace
     deriving (Show, Eq, Ord)
 
 -- | The LDAPString is a notational convenience to indicate that, although

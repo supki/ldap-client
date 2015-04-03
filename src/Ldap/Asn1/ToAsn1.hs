@@ -9,7 +9,7 @@ import           Data.Foldable (fold, foldMap)
 import           Data.Maybe (Maybe, maybe)
 import           Data.Monoid (Endo(Endo), (<>), mempty)
 import qualified Data.Text.Encoding as Text
-import           Prelude ((.), fromIntegral)
+import           Prelude (Integer, (.), fromIntegral)
 
 import           Ldap.Asn1.Type
 
@@ -87,11 +87,16 @@ AssertionValue ::= OCTET STRING
 instance ToAsn1 AssertionValue where
   toAsn1 (AssertionValue s) = single (Asn1.OctetString s)
 
+
 {- |
 PartialAttribute ::= SEQUENCE {
      type       AttributeDescription,
      vals       SET OF value AttributeValue }
+-}
+instance ToAsn1 PartialAttribute where
+  toAsn1 (PartialAttribute d xs) = sequence (toAsn1 d <> set (foldMap toAsn1 xs))
 
+{- |
 Attribute ::= PartialAttribute(WITH COMPONENTS {
      ...,
      vals (SIZE(1..MAX))})
@@ -151,6 +156,16 @@ SearchRequest ::= [APPLICATION 3] SEQUENCE {
      filter          Filter,
      attributes      AttributeSelection }
 
+ModifyRequest ::= [APPLICATION 6] SEQUENCE {
+     object          LDAPDN,
+     changes         SEQUENCE OF change SEQUENCE {
+          operation       ENUMERATED {
+               add     (0),
+               delete  (1),
+               replace (2),
+               ...  },
+          modification    PartialAttribute } }
+
 AddRequest ::= [APPLICATION 8] SEQUENCE {
      entry           LDAPDN,
      attributes      AttributeList }
@@ -169,8 +184,8 @@ instance ToAsn1 ProtocolClientOp where
   toAsn1 (SearchRequest bo s da sl tl to f a) =
     application 3 (fold
       [ toAsn1 bo
-      , single (Asn1.Enumerated s')
-      , single (Asn1.Enumerated da')
+      , enum s'
+      , enum da'
       , single (Asn1.IntVal (fromIntegral sl))
       , single (Asn1.IntVal (fromIntegral tl))
       , single (Asn1.Boolean to)
@@ -187,6 +202,14 @@ instance ToAsn1 ProtocolClientOp where
       DerefInSearching       -> 1
       DerefFindingBaseObject -> 2
       DerefAlways            -> 3
+  toAsn1 (ModifyRequest dn xs) =
+    application 6 (fold
+      [ toAsn1 dn
+      , sequence (foldMap (\(op, pa) -> sequence (enum (case op of
+          Add     -> 0
+          Delete  -> 1
+          Replace -> 2) <> toAsn1 pa)) xs)
+      ])
   toAsn1 (AddRequest dn as) =
     application 8 (toAsn1 dn <> toAsn1 as)
   toAsn1 (DeleteRequest (LdapDn (LdapString dn))) =
@@ -293,6 +316,9 @@ other c t = single . Asn1.Other c t
 
 optional :: ToAsn1 a => Maybe a -> Endo [ASN1]
 optional = maybe mempty toAsn1
+
+enum :: Integer -> Endo [ASN1]
+enum = single . Asn1.Enumerated
 
 single :: a -> Endo [a]
 single x = Endo (x :)

@@ -14,8 +14,8 @@ import           Control.Monad.STM (STM, atomically)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import           Data.Typeable (Typeable)
 
-import           Ldap.Client.Internal
 import qualified Ldap.Asn1.Type as Type
+import           Ldap.Client.Internal
 
 
 data BindError =

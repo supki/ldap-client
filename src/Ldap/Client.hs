@@ -9,12 +9,12 @@ module Ldap.Client
   , Type.ResultCode(..)
   , Async
   , with
-    -- * Bind Request
+    -- * Bind Operation
   , Dn(..)
   , Password(..)
   , BindError(..)
   , bind
-    -- * Search Request
+    -- * Search Operation
   , Attr(..)
   , SearchError(..)
   , search
@@ -27,17 +27,21 @@ module Ldap.Client
   , derefAliases
   , Filter(..)
   , SearchEntry(..)
-    -- * Add Request
+    -- * Modify Operation
+  , ModifyError(..)
+  , Operation(..)
+  , modify
+    -- * Add Operation
   , AttrList
   , AddError(..)
   , add
-    -- * Delete Request
+    -- * Delete Operation
   , DeleteError(..)
   , delete
-    -- * Compare Request
+    -- * Compare Operation
   , CompareError(..)
   , compare
-    -- * Waiting for Request Completion
+    -- * Waiting for Operation Completion
   , wait
   , waitSTM
   ) where
@@ -80,6 +84,7 @@ import           Ldap.Client.Search
   , Filter(..)
   , SearchEntry(..)
   )
+import           Ldap.Client.Modify (ModifyError(..), Operation(..), modify)
 import           Ldap.Client.Compare (CompareError(..), compare)
 
 
@@ -92,6 +97,7 @@ data LdapError =
   | ParseError Asn1.ASN1Error
   | BindError BindError
   | SearchError SearchError
+  | ModifyError ModifyError
   | AddError AddError
   | DeleteError DeleteError
   | CompareError CompareError
@@ -115,6 +121,7 @@ with host port f = do
   , Handler (return . Left . ParseError)
   , Handler (return . Left . BindError)
   , Handler (return . Left . SearchError)
+  , Handler (return . Left . ModifyError)
   , Handler (return . Left . AddError)
   , Handler (return . Left . DeleteError)
   , Handler (return . Left . CompareError)
@@ -193,6 +200,9 @@ dispatch Ldap { client } inq outq =
              Type.SearchResultDone {} -> do
                let stack = Map.findWithDefault [] mid got
                traverse_ (\var -> putTMVar var (op :| stack)) (Map.lookup mid results)
+               return (Map.delete mid got, Map.delete mid results, counter)
+             Type.ModifyResponse {} -> do
+               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
              Type.AddResponse {} -> do
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)

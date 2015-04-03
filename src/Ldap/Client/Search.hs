@@ -23,8 +23,6 @@ import           Data.Int (Int32)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Maybe (mapMaybe)
-import           Data.Set (Set)
-import qualified Data.Set as Set
 import           Data.Typeable (Typeable)
 
 import qualified Ldap.Asn1.Type as Type
@@ -90,7 +88,7 @@ searchResult (Type.SearchResultDone (Type.LdapResult code _ _ _) :| xs)
     Just (SearchEntry (Dn dn) (map h ys))
   g _ = Nothing
   h (Type.PartialAttribute (Type.AttributeDescription (Type.LdapString x))
-                           y) = (Attr x, Set.map j y)
+                           y) = (Attr x, fmap j y)
   j (Type.AttributeValue x) = x
 searchResult res = Left (SearchInvalidResponse res)
 
@@ -193,5 +191,5 @@ data Filter =
   | Attr :=* (Maybe ByteString, [ByteString], Maybe ByteString)
   | (Maybe Attr, Maybe Attr, Bool) ::= ByteString
 
-data SearchEntry = SearchEntry Dn (AttrList Set)
+data SearchEntry = SearchEntry Dn (AttrList [])
     deriving (Show, Eq)
