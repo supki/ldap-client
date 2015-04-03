@@ -26,7 +26,7 @@ spec = do
     res `shouldBe` Right ()
 
   it "tries to delete an non-existing entry, unsuccessfully" $ do
-    res <- locally $ \l -> do
+    res <- locally $ \l ->
       Ldap.delete l oddish
     res `shouldBe` Left
       (Ldap.ResponseError

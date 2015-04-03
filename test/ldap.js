@@ -158,6 +158,19 @@ server.del('o=localhost', [], function(req, res, next) {
   return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
 });
 
+server.modifyDN('o=localhost', [], function(req, res, next) {
+  for (var i = 0; i < pokemon.length; i++) {
+    if (req.dn.toString() === pokemon[i].dn) {
+      req.dn.rdns[0] = req.newRdn.rdns[0];
+      pokemon[i].dn = req.dn.toString();
+      pokemon[i].attributes.cn = req.newRdn.rdns[0].cn;
+    }
+  }
+
+  res.end();
+  return next();
+});
+
 server.compare('o=localhost', [], function(req, res, next) {
   for (var i = 0; i < pokemon.length; i++) {
     if (req.dn.toString() === pokemon[i].dn) {
@@ -183,6 +196,6 @@ server.compare('o=localhost', [], function(req, res, next) {
   return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
 });
 
-server.listen(port, '0.0.0.0', function() {
+server.listen(port, function() {
   console.log("ldaps://localhost:%d", port);
 });

@@ -19,10 +19,11 @@ data ProtocolClientOp =
     BindRequest Int8 LdapDn AuthenticationChoice
   | UnbindRequest
   | SearchRequest LdapDn Scope DerefAliases Int32 Int32 Bool Filter AttributeSelection
+  | ModifyRequest LdapDn [(Operation, PartialAttribute)]
   | AddRequest LdapDn AttributeList
   | DeleteRequest LdapDn
+  | ModifyDnRequest LdapDn RelativeLdapDn Bool (Maybe LdapDn)
   | CompareRequest LdapDn AttributeValueAssertion
-  | ModifyRequest LdapDn [(Operation, PartialAttribute)]
   | ExtendedRequest LdapOid (Maybe ByteString)
     deriving (Show, Eq, Ord)
 
@@ -34,6 +35,7 @@ data ProtocolServerOp =
   | ModifyResponse LdapResult
   | AddResponse LdapResult
   | DeleteResponse LdapResult
+  | ModifyDnResponse LdapResult
   | CompareResponse LdapResult
   | ExtendedResponse LdapResult (Maybe LdapOid) (Maybe ByteString)
     deriving (Show, Eq, Ord)
@@ -161,6 +163,9 @@ data PartialAttribute = PartialAttribute AttributeDescription [AttributeValue]
     deriving (Show, Eq, Ord)
 
 newtype LdapDn = LdapDn LdapString
+    deriving (Show, Eq, Ord)
+
+newtype RelativeLdapDn = RelativeLdapDn LdapString
     deriving (Show, Eq, Ord)
 
 newtype ReferralUris = ReferralUris (NonEmpty Uri)

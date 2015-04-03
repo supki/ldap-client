@@ -36,8 +36,8 @@ extendedAsyncSTM l oid mv =
   let req = extendedRequest oid mv in sendRequest l (extendedResult req) req
 
 extendedRequest :: Oid -> Maybe ByteString -> Request
-extendedRequest (Oid oid) mv =
-  Type.ExtendedRequest (Type.LdapOid oid) mv
+extendedRequest (Oid oid) =
+  Type.ExtendedRequest (Type.LdapOid oid)
 
 extendedResult :: Request -> Response -> Either ResponseError ()
 extendedResult req (Type.ExtendedResponse (Type.LdapResult code (Type.LdapDn (Type.LdapString dn))

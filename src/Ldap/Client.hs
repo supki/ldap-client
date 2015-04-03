@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client
   ( Host(..)
@@ -35,6 +34,9 @@ module Ldap.Client
   , add
     -- * Delete Operation
   , delete
+    -- * ModifyDn Operation
+  , RelativeDn(..)
+  , modifyDn
     -- * Compare Operation
   , compare
     -- * Extended Operation
@@ -85,7 +87,7 @@ import           Ldap.Client.Search
   , Filter(..)
   , SearchEntry(..)
   )
-import           Ldap.Client.Modify (Operation(..), modify)
+import           Ldap.Client.Modify (Operation(..), modify, modifyDn)
 import           Ldap.Client.Add (add)
 import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
@@ -177,37 +179,22 @@ dispatch
   -> TQueue (Type.LdapMessage Request)
   -> IO a
 dispatch Ldap { client } inq outq =
-  flip fix (Map.empty, Map.empty, 1) $ \loop (!got, !results, !counter) -> do
+  flip fix (Map.empty, Map.empty, 1) $ \loop (!got, !results, !counter) ->
     loop =<< atomically (asum
       [ do New new var <- readTQueue client
            writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
            return (got, Map.insert (Type.Id counter) var results, counter + 1)
       , do Type.LdapMessage mid op _ <- readTQueue inq
            case op of
-             Type.BindResponse {} -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             Type.SearchResultEntry {} -> do
+             Type.SearchResultEntry {} ->
                return (Map.insertWith (++) mid [op] got, results, counter)
-             Type.SearchResultReference {} -> do
+             Type.SearchResultReference {} ->
                return (got, results, counter)
              Type.SearchResultDone {} -> do
                let stack = Map.findWithDefault [] mid got
                traverse_ (\var -> putTMVar var (op :| stack)) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
-             Type.ModifyResponse {} -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             Type.AddResponse {} -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             Type.DeleteResponse {} -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             Type.CompareResponse {} -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             Type.ExtendedResponse {} -> do
+             _ -> do
                traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
                return (Map.delete mid got, Map.delete mid results, counter)
       ])

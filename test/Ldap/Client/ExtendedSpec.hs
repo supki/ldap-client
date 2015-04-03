@@ -21,7 +21,7 @@ spec = do
                                         (Dn "")
                                         "0 not supported"))
 
-  it "sends a startTLS  request" $ do
+  it "sends a StartTLS request" $ do
     res <- locally $ \l ->
       Ldap.startTls l
     res `shouldBe` Left

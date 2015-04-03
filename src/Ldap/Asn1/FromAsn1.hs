@@ -21,6 +21,9 @@ import qualified Data.Text.Encoding as Text
 
 import           Ldap.Asn1.Type
 
+{-# ANN module "HLint: ignore Use const" #-}
+{-# ANN module "HLint: ignore Avoid lambda" #-}
+
 
 class FromAsn1 a where
   fromAsn1 :: Parser [ASN1] a
@@ -262,6 +265,7 @@ instance FromAsn1 ProtocolServerOp where
     , fmap ModifyResponse (app 7)
     , fmap AddResponse (app 9)
     , fmap DeleteResponse (app 11)
+    , fmap ModifyDnResponse (app 13)
     , fmap CompareResponse (app 15)
     , do
       Asn1.Start (Asn1.Container Asn1.Application 24) <- next

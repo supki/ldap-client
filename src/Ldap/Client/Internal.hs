@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client.Internal
@@ -20,6 +19,7 @@ module Ldap.Client.Internal
   , raise
   , sendRequest
   , Dn(..)
+  , RelativeDn(..)
   , Password(..)
   , Attr(..)
   , unAttr
@@ -60,6 +60,9 @@ instance Functor Async where
 
 
 newtype Dn = Dn Text
+    deriving (Show, Eq)
+
+newtype RelativeDn = RelativeDn Text
     deriving (Show, Eq)
 
 newtype Oid = Oid ByteString

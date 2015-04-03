@@ -62,6 +62,12 @@ instance ToAsn1 LdapDn where
   toAsn1 (LdapDn s) = toAsn1 s
 
 {- |
+RelativeLDAPDN ::= LDAPString -- Constrained to <name-component>
+-}
+instance ToAsn1 RelativeLdapDn where
+  toAsn1 (RelativeLdapDn s) = toAsn1 s
+
+{- |
 AttributeDescription ::= LDAPString
 -}
 instance ToAsn1 AttributeDescription where
@@ -172,6 +178,12 @@ AddRequest ::= [APPLICATION 8] SEQUENCE {
 
 DelRequest ::= [APPLICATION 10] LDAPDN
 
+ModifyDNRequest ::= [APPLICATION 12] SEQUENCE {
+     entry           LDAPDN,
+     newrdn          RelativeLDAPDN,
+     deleteoldrdn    BOOLEAN,
+     newSuperior     [0] LDAPDN OPTIONAL }
+
 CompareRequest ::= [APPLICATION 14] SEQUENCE {
      entry           LDAPDN,
      ava             AttributeValueAssertion }
@@ -219,6 +231,15 @@ instance ToAsn1 ProtocolClientOp where
     application 8 (toAsn1 dn <> toAsn1 as)
   toAsn1 (DeleteRequest (LdapDn (LdapString dn))) =
     other Asn1.Application 10 (Text.encodeUtf8 dn)
+  toAsn1 (ModifyDnRequest dn rdn del new) =
+    application 12 (fold
+      [ toAsn1 dn
+      , toAsn1 rdn
+      , single (Asn1.Boolean del)
+      , maybe mempty
+              (\(LdapDn (LdapString dn')) -> other Asn1.Context 0 (Text.encodeUtf8 dn'))
+              new
+      ])
   toAsn1 (CompareRequest dn av) =
     application 14 (toAsn1 dn <> sequence (toAsn1 av))
   toAsn1 (ExtendedRequest (LdapOid oid) mv) =

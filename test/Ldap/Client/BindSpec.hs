@@ -11,12 +11,12 @@ import           SpecHelper (locally)
 spec :: Spec
 spec = do
   it "binds as ‘admin’" $ do
-    res <- locally $ \l -> do
+    res <- locally $ \l ->
       Ldap.bind l (Dn "cn=admin") (Password "secret")
     res `shouldBe` Right ()
 
   it "tries to bind as ‘admin’ with the wrong password, unsuccessfully" $ do
-    res <- locally $ \l -> do
+    res <- locally $ \l ->
       Ldap.bind l (Dn "cn=admin") (Password "public")
     res `shouldBe` Left
       (Ldap.ResponseError
@@ -31,7 +31,7 @@ spec = do
   it "binds as ‘pikachu’" $ do
     res <- locally $ \l -> do
       Ldap.bind l (Dn "cn=admin") (Password "secret")
-      Ldap.SearchEntry udn _ : []
+      [Ldap.SearchEntry udn _]
         <- Ldap.search l (Dn "o=localhost")
                          (scope WholeSubtree)
                          (Attr "cn" := "pikachu")

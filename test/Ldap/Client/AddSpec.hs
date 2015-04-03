@@ -21,9 +21,9 @@ spec = do
   it "adds an entry" $ do
     res <- locally $ \l -> do
       Ldap.add l vulpix
-                 [ (Attr "cn",        (NonEmpty.fromList ["vulpix"]))
-                 , (Attr "evolution", (NonEmpty.fromList ["0"]))
-                 , (Attr "type",      (NonEmpty.fromList ["fire"]))
+                 [ (Attr "cn",        NonEmpty.fromList ["vulpix"])
+                 , (Attr "evolution", NonEmpty.fromList ["0"])
+                 , (Attr "type",      NonEmpty.fromList ["fire"])
                  ]
       res <- go l (Attr "cn" := "vulpix")
       dns res `shouldBe` [vulpix]

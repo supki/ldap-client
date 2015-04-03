@@ -17,6 +17,7 @@ module SpecHelper
   , metapod
   , butterfree
   , pikachu
+  , raichu
   , vulpix
   , oddish
   ) where
@@ -89,6 +90,9 @@ butterfree = Dn "cn=butterfree,o=localhost"
 
 pikachu :: Dn
 pikachu = Dn "cn=pikachu,o=localhost"
+
+raichu :: Dn
+raichu = Dn "cn=raichu,o=localhost"
 
 vulpix :: Dn
 vulpix = Dn "cn=vulpix,o=localhost"

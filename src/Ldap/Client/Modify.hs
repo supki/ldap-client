@@ -4,6 +4,10 @@ module Ldap.Client.Modify
   , modifyEither
   , modifyAsync
   , modifyAsyncSTM
+  , modifyDn
+  , modifyDnEither
+  , modifyDnAsync
+  , modifyDnAsyncSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)
@@ -55,3 +59,33 @@ modifyResult req (Type.ModifyResponse (Type.LdapResult code (Type.LdapDn (Type.L
   | Type.Success <- code = Right ()
   | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
 modifyResult req res = Left (ResponseInvalid req res)
+
+
+modifyDn :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO ()
+modifyDn l dn rdn del new =
+  raise =<< modifyDnEither l dn rdn del new
+
+modifyDnEither :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO (Either ResponseError ())
+modifyDnEither l dn rdn del new =
+  wait =<< modifyDnAsync l dn rdn del new
+
+modifyDnAsync :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO (Async ())
+modifyDnAsync l dn rdn del new =
+  atomically (modifyDnAsyncSTM l dn rdn del new)
+
+modifyDnAsyncSTM :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> STM (Async ())
+modifyDnAsyncSTM l dn rdn del new =
+  let req = modifyDnRequest dn rdn del new in sendRequest l (modifyDnResult req) req
+
+modifyDnRequest :: Dn -> RelativeDn -> Bool -> Maybe Dn -> Request
+modifyDnRequest (Dn dn) (RelativeDn rdn) del new =
+  Type.ModifyDnRequest (Type.LdapDn (Type.LdapString dn))
+                       (Type.RelativeLdapDn (Type.LdapString rdn))
+                       del
+                       (fmap (\(Dn dn') -> Type.LdapDn (Type.LdapString dn')) new)
+
+modifyDnResult :: Request -> Response -> Either ResponseError ()
+modifyDnResult req (Type.ModifyDnResponse (Type.LdapResult code (Type.LdapDn (Type.LdapString dn)) (Type.LdapString msg) _) :| [])
+  | Type.Success <- code = Right ()
+  | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
+modifyDnResult req res = Left (ResponseInvalid req res)
