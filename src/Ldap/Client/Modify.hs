@@ -1,27 +1,18 @@
 module Ldap.Client.Modify
-  ( ModifyError(..)
-  , Operation(..)
+  ( Operation(..)
   , modify
   , modifyEither
   , modifyAsync
   , modifyAsyncSTM
   ) where
 
-import           Control.Exception (Exception)
 import           Control.Monad.STM (STM, atomically)
 import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty((:|)))
-import           Data.Text (Text)
-import           Data.Typeable (Typeable)
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
-
-data ModifyError =
-    ModifyInvalidResponse Response
-  | ModifyErrorCode Type.ResultCode Dn Text
-    deriving (Show, Eq, Typeable)
 
 data Operation =
     Delete Attr [ByteString]
@@ -29,25 +20,25 @@ data Operation =
   | Replace Attr [ByteString]
     deriving (Show, Eq)
 
-
-instance Exception ModifyError
-
 modify :: Ldap -> Dn -> [Operation] -> IO ()
 modify l dn as =
   raise =<< modifyEither l dn as
 
-modifyEither :: Ldap -> Dn -> [Operation] -> IO (Either ModifyError ())
+modifyEither :: Ldap -> Dn -> [Operation] -> IO (Either ResponseError ())
 modifyEither l dn as =
   wait =<< modifyAsync l dn as
 
-modifyAsync :: Ldap -> Dn -> [Operation] -> IO (Async ModifyError ())
+modifyAsync :: Ldap -> Dn -> [Operation] -> IO (Async ())
 modifyAsync l dn as =
   atomically (modifyAsyncSTM l dn as)
 
-modifyAsyncSTM :: Ldap -> Dn -> [Operation] -> STM (Async ModifyError ())
-modifyAsyncSTM l (Dn dn) xs =
-  sendRequest l modifyResult
-                (Type.ModifyRequest (Type.LdapDn (Type.LdapString dn)) (map f xs))
+modifyAsyncSTM :: Ldap -> Dn -> [Operation] -> STM (Async ())
+modifyAsyncSTM l dn xs =
+  let req = modifyRequest dn xs in sendRequest l (modifyResult req) req
+
+modifyRequest :: Dn -> [Operation] -> Request
+modifyRequest (Dn dn) xs =
+  Type.ModifyRequest (Type.LdapDn (Type.LdapString dn)) (map f xs)
  where
   f (Delete (Attr k) vs) =
     (Type.Delete, Type.PartialAttribute (Type.AttributeDescription (Type.LdapString k))
@@ -59,8 +50,8 @@ modifyAsyncSTM l (Dn dn) xs =
     (Type.Replace, Type.PartialAttribute (Type.AttributeDescription (Type.LdapString k))
                                          (map Type.AttributeValue vs))
 
-modifyResult :: Response -> Either ModifyError ()
-modifyResult (Type.ModifyResponse (Type.LdapResult code (Type.LdapDn (Type.LdapString dn)) (Type.LdapString msg) _) :| [])
+modifyResult :: Request -> Response -> Either ResponseError ()
+modifyResult req (Type.ModifyResponse (Type.LdapResult code (Type.LdapDn (Type.LdapString dn)) (Type.LdapString msg) _) :| [])
   | Type.Success <- code = Right ()
-  | otherwise = Left (ModifyErrorCode code (Dn dn) msg)
-modifyResult res = Left (ModifyInvalidResponse res)
+  | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
+modifyResult req res = Left (ResponseInvalid req res)

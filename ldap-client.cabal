@@ -29,6 +29,13 @@ library
     Ldap.Asn1.ToAsn1
     Ldap.Asn1.Type
     Ldap.Client
+    Ldap.Client.Add
+    Ldap.Client.Bind
+    Ldap.Client.Compare
+    Ldap.Client.Delete
+    Ldap.Client.Internal
+    Ldap.Client.Modify
+    Ldap.Client.Search
   build-depends:
       asn1-encoding >= 0.9
     , asn1-types    >= 0.3
@@ -52,7 +59,15 @@ test-suite spec
   main-is:
     Spec.hs
   other-modules:
-    Ldap.ClientSpec
+    Ldap.Client
+    Ldap.Client.AddSpec
+    Ldap.Client.BindSpec
+    Ldap.Client.CompareSpec
+    Ldap.Client.DeleteSpec
+    Ldap.Client.InternalSpec
+    Ldap.Client.ModifySpec
+    Ldap.Client.SearchSpec
+    SpecHelper
   build-depends:
       base          >= 4.7 && < 5
     , hspec

@@ -6,17 +6,16 @@ module Ldap.Client
   , PortNumber
   , Ldap
   , LdapError(..)
+  , ResponseError(..)
   , Type.ResultCode(..)
   , Async
   , with
     -- * Bind Operation
   , Dn(..)
   , Password(..)
-  , BindError(..)
   , bind
     -- * Search Operation
   , Attr(..)
-  , SearchError(..)
   , search
   , Search
   , scope
@@ -28,18 +27,14 @@ module Ldap.Client
   , Filter(..)
   , SearchEntry(..)
     -- * Modify Operation
-  , ModifyError(..)
   , Operation(..)
   , modify
     -- * Add Operation
   , AttrList
-  , AddError(..)
   , add
     -- * Delete Operation
-  , DeleteError(..)
   , delete
     -- * Compare Operation
-  , CompareError(..)
   , compare
     -- * Waiting for Operation Completion
   , wait
@@ -71,10 +66,9 @@ import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
-import           Ldap.Client.Bind (BindError(..), bind, unbindAsync)
+import           Ldap.Client.Bind (bind, unbindAsync)
 import           Ldap.Client.Search
-  ( SearchError(..)
-  , search
+  ( search
   , Search
   , scope
   , size
@@ -84,8 +78,10 @@ import           Ldap.Client.Search
   , Filter(..)
   , SearchEntry(..)
   )
-import           Ldap.Client.Modify (ModifyError(..), Operation(..), modify)
-import           Ldap.Client.Compare (CompareError(..), compare)
+import           Ldap.Client.Modify (Operation(..), modify)
+import           Ldap.Client.Add (add)
+import           Ldap.Client.Delete (delete)
+import           Ldap.Client.Compare (compare)
 
 
 newLdap :: IO Ldap
@@ -95,12 +91,7 @@ newLdap = Ldap
 data LdapError =
     IOError IOError
   | ParseError Asn1.ASN1Error
-  | BindError BindError
-  | SearchError SearchError
-  | ModifyError ModifyError
-  | AddError AddError
-  | DeleteError DeleteError
-  | CompareError CompareError
+  | ResponseError ResponseError
     deriving (Show, Eq)
 
 -- | The entrypoint into LDAP.
@@ -119,12 +110,7 @@ with host port f = do
  `catches`
   [ Handler (return . Left . IOError)
   , Handler (return . Left . ParseError)
-  , Handler (return . Left . BindError)
-  , Handler (return . Left . SearchError)
-  , Handler (return . Left . ModifyError)
-  , Handler (return . Left . AddError)
-  , Handler (return . Left . DeleteError)
-  , Handler (return . Left . CompareError)
+  , Handler (return . Left . ResponseError)
   ]
  where
   params = Conn.ConnectionParams

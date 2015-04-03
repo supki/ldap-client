@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.CompareSpec (spec) where
 
-import Test.Hspec
-import Ldap.Client as Ldap
+import           Test.Hspec
+import qualified Ldap.Asn1.Type as Ldap.Type
+import           Ldap.Client as Ldap
 
 import SpecHelper (locally, charmander, charizard)
 
@@ -25,4 +26,14 @@ spec = do
     res <- locally $ \l -> do
       res <- Ldap.compare l (Dn "cn=nope") (Attr "type") "flying"
       res `shouldBe` False
-    res `shouldBe` Left (CompareError (CompareErrorCode NoSuchObject))
+    res `shouldBe` Left
+      (Ldap.ResponseError
+        (Ldap.ResponseErrorCode
+          (Ldap.Type.CompareRequest
+                                 (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=nope"))
+                                 (Ldap.Type.AttributeValueAssertion
+                                    (Ldap.Type.AttributeDescription (Ldap.Type.LdapString "type"))
+                                    (Ldap.Type.AssertionValue "flying")))
+          Ldap.NoSuchObject
+          (Dn "")
+          "No tree found for: cn=nope"))

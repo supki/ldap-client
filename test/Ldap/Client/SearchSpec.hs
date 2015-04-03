@@ -2,11 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.SearchSpec (spec) where
 
-import Data.Monoid ((<>))
-import Test.Hspec
-import Ldap.Client as Ldap
+import           Data.Monoid ((<>))
+import           Test.Hspec
+import           Ldap.Client as Ldap
+import qualified Ldap.Asn1.Type as Ldap.Type
 
-import SpecHelper
+import           SpecHelper
   ( locally
   , dns
   , bulbasaur
@@ -36,7 +37,21 @@ spec = do
     res <- locally $ \l -> do
       Ldap.bind l pikachu (Password "i-choose-you")
       go l (Present (Attr "password"))
-    res `shouldBe` Left (Ldap.SearchError (Ldap.SearchErrorCode Ldap.InsufficientAccessRights))
+    let req = Ldap.Type.SearchRequest
+          (Ldap.Type.LdapDn (Ldap.Type.LdapString "o=localhost"))
+          Ldap.Type.WholeSubtree
+          Ldap.Type.NeverDerefAliases
+          0
+          0
+          True
+          (Ldap.Type.Present (Ldap.Type.AttributeDescription (Ldap.Type.LdapString "password")))
+          (Ldap.Type.AttributeSelection [])
+    res `shouldBe` Left
+      (Ldap.ResponseError
+        (Ldap.ResponseErrorCode req
+                                Ldap.InsufficientAccessRights
+                                (Dn "o=localhost")
+                                "Insufficient Access Rights"))
 
   it "‘present’ filter" $ do
     res <- locally $ \l -> do

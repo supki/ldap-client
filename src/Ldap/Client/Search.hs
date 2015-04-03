@@ -1,7 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client.Search
-  ( SearchError(..)
-  , search
+  ( search
   , searchEither
   , searchAsync
   , searchAsyncSTM
@@ -16,33 +15,19 @@ module Ldap.Client.Search
   , SearchEntry(..)
   ) where
 
-import           Control.Exception (Exception)
 import           Control.Monad.STM (STM, atomically)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int32)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Maybe (mapMaybe)
-import           Data.Typeable (Typeable)
+import           Data.Semigroup (Semigroup(..))
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
-data SearchError =
-    SearchInvalidResponse Response
-  | SearchErrorCode Type.ResultCode
-    deriving (Show, Eq, Typeable)
-
-instance Exception SearchError
-
-search
-  :: Ldap
-  -> Dn
-  -> Mod Search
-  -> Filter
-  -> [Attr]
-  -> IO [SearchEntry]
+search :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> IO [SearchEntry]
 search l base opts flt attributes =
   raise =<< searchEither l base opts flt attributes
 
@@ -52,45 +37,17 @@ searchEither
   -> Mod Search
   -> Filter
   -> [Attr]
-  -> IO (Either SearchError [SearchEntry])
+  -> IO (Either ResponseError [SearchEntry])
 searchEither l base opts flt attributes =
   wait =<< searchAsync l base opts flt attributes
 
-searchAsync
-  :: Ldap
-  -> Dn
-  -> Mod Search
-  -> Filter
-  -> [Attr]
-  -> IO (Async SearchError [SearchEntry])
+searchAsync :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> IO (Async [SearchEntry])
 searchAsync l base opts flt attributes =
   atomically (searchAsyncSTM l base opts flt attributes)
 
-searchAsyncSTM
-  :: Ldap
-  -> Dn
-  -> Mod Search
-  -> Filter
-  -> [Attr]
-  -> STM (Async SearchError [SearchEntry])
+searchAsyncSTM :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> STM (Async [SearchEntry])
 searchAsyncSTM l base opts flt attributes =
-  sendRequest l searchResult (searchRequest base opts flt attributes)
-
-searchResult :: Response -> Either SearchError [SearchEntry]
-searchResult (Type.SearchResultDone (Type.LdapResult code _ _ _) :| xs)
-  | Type.Success <- code = Right (mapMaybe g xs)
-  | Type.AdminLimitExceeded <- code = Right (mapMaybe g xs)
-  | Type.SizeLimitExceeded <- code = Right (mapMaybe g xs)
-  | otherwise = Left (SearchErrorCode code)
- where
-  g (Type.SearchResultEntry (Type.LdapDn (Type.LdapString dn))
-                            (Type.PartialAttributeList ys)) =
-    Just (SearchEntry (Dn dn) (map h ys))
-  g _ = Nothing
-  h (Type.PartialAttribute (Type.AttributeDescription (Type.LdapString x))
-                           y) = (Attr x, fmap j y)
-  j (Type.AttributeValue x) = x
-searchResult res = Left (SearchInvalidResponse res)
+  let req = searchRequest base opts flt attributes in sendRequest l (searchResult req) req
 
 searchRequest :: Dn -> Mod Search -> Filter -> [Attr] -> Request
 searchRequest (Dn base) (Mod m) flt attributes =
@@ -141,6 +98,23 @@ searchRequest (Dn base) (Mod m) flt attributes =
                                   (Type.AssertionValue y)
                                   b)
 
+searchResult :: Request -> Response -> Either ResponseError [SearchEntry]
+searchResult req (Type.SearchResultDone (Type.LdapResult code (Type.LdapDn (Type.LdapString dn'))
+                                                              (Type.LdapString msg) _) :| xs)
+  | Type.Success <- code = Right (mapMaybe g xs)
+  | Type.AdminLimitExceeded <- code = Right (mapMaybe g xs)
+  | Type.SizeLimitExceeded <- code = Right (mapMaybe g xs)
+  | otherwise = Left (ResponseErrorCode req code (Dn dn') msg)
+ where
+  g (Type.SearchResultEntry (Type.LdapDn (Type.LdapString dn))
+                            (Type.PartialAttributeList ys)) =
+    Just (SearchEntry (Dn dn) (map h ys))
+  g _ = Nothing
+  h (Type.PartialAttribute (Type.AttributeDescription (Type.LdapString x))
+                           y) = (Attr x, fmap j y)
+  j (Type.AttributeValue x) = x
+searchResult req res = Left (ResponseInvalid req res)
+
 data Search = Search
   { _scope        :: Type.Scope
   , _derefAliases :: Type.DerefAliases
@@ -175,9 +149,12 @@ derefAliases x = Mod (\y -> y { _derefAliases = x })
 
 newtype Mod a = Mod (a -> a)
 
+instance Semigroup (Mod a) where
+  Mod f <> Mod g = Mod (g . f)
+
 instance Monoid (Mod a) where
   mempty = Mod id
-  Mod f `mappend` Mod g = Mod (g . f)
+  mappend = (<>)
 
 data Filter =
     Not Filter

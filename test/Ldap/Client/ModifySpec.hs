@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.ModifySpec (spec) where
 
-import Data.ByteString (ByteString)
-import Data.Monoid ((<>))
-import Test.Hspec
-import Ldap.Client as Ldap
+import           Data.ByteString (ByteString)
+import           Data.Monoid ((<>))
+import           Test.Hspec
+import qualified Ldap.Asn1.Type as Ldap.Type
+import           Ldap.Client as Ldap
 
-import SpecHelper (locally, charizard, pikachu)
+import           SpecHelper (locally, charizard, pikachu)
 
 
 spec :: Spec
@@ -32,7 +33,17 @@ spec = do
       res <- locally $ \l -> do
         Ldap.modify l pikachu [Attr "password" `Delete` []]
       res `shouldBe` Left
-        (ModifyError (ModifyErrorCode UnwillingToPerform (Dn "o=localhost") "cannot delete password"))
+        (ResponseError
+          (ResponseErrorCode
+            (Ldap.Type.ModifyRequest (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=pikachu,o=localhost"))
+                                     [( Ldap.Type.Delete
+                                     , Ldap.Type.PartialAttribute
+                                         (Ldap.Type.AttributeDescription (Ldap.Type.LdapString "password"))
+                                         []
+                                     )])
+                                     UnwillingToPerform
+                                     (Dn "o=localhost")
+                                     "cannot delete password"))
 
   context "add" $ do
     it "can feed ‘charizard’" $ do
