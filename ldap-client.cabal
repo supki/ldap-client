@@ -33,6 +33,7 @@ library
     Ldap.Client.Bind
     Ldap.Client.Compare
     Ldap.Client.Delete
+    Ldap.Client.Extended
     Ldap.Client.Internal
     Ldap.Client.Modify
     Ldap.Client.Search
@@ -40,7 +41,7 @@ library
       asn1-encoding >= 0.9
     , asn1-types    >= 0.3
     , async
-    , base          >= 4.7 && < 5
+    , base          >= 4.6 && < 5
     , bytestring
     , connection    >= 0.2
     , containers
@@ -59,17 +60,18 @@ test-suite spec
   main-is:
     Spec.hs
   other-modules:
-    Ldap.Client
     Ldap.Client.AddSpec
     Ldap.Client.BindSpec
     Ldap.Client.CompareSpec
     Ldap.Client.DeleteSpec
-    Ldap.Client.InternalSpec
+    Ldap.Client.ExtendedSpec
     Ldap.Client.ModifySpec
     Ldap.Client.SearchSpec
     SpecHelper
   build-depends:
-      base          >= 4.7 && < 5
+      base          >= 4.6 && < 5
+    , bytestring
     , hspec
     , ldap-client
     , process
+    , semigroups

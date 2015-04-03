@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -44,6 +45,9 @@ module Ldap.Client
   , waitSTM
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
+import           Control.Applicative ((<$>))
+#endif
 import qualified Control.Concurrent.Async as Async
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (putTMVar)

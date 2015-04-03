@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Ldap.Asn1.FromAsn1
   ( FromAsn1(..)
   , Parser
@@ -6,7 +7,11 @@ module Ldap.Asn1.FromAsn1
   , next
   ) where
 
+#if __GLASGOW_HASKELL__ >= 710
 import           Control.Applicative (Alternative(..), liftA2, optional)
+#else
+import           Control.Applicative (Applicative(..), Alternative(..), liftA2, optional)
+#endif
 import           Control.Monad (MonadPlus(..), (>=>), guard)
 import           Data.ASN1.Types (ASN1)
 import qualified Data.ASN1.Types as Asn1

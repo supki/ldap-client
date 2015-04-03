@@ -2,6 +2,7 @@
 
 ldap-client
 ===========
+[![Build Status](https://travis-ci.org/supki/ldap-client.svg?branch=master)](https://travis-ci.org/supki/ldap-client)
 
 This library implements (the parts of) [RFC 4511][rfc4511]
 
@@ -22,24 +23,8 @@ IntermediateResponse Message | 4.13        | ✘
 StartTLS Operation           | 4.14        | ✔†
 LDAP over TLS                | -           | ✔
 
-\*: approximate and extensible matches are untested, so probably do not work
-†: only serves as an example of Extended Operation, meaning that it does not change
-connection's state on success, so it's useless for all practical purposes.
-In other words, use LDAP over TLS instead.
-
-```
-% git grep '\bString\b' | wc -l
-2
-```
-
-Testing
--------
-
-```shell
-% sudo apt-get install npm
-% npm install ldapjs
-% cabal test
-```
+\* Approximate and extensible matches are untested, so probably do not work  
+† Only serves as an example of Extended Operation.  It's useless for all practical purposes as it does not actually enable TLS.  In other words, use LDAP over TLS instead.
 
   [rfc4511]: https://tools.ietf.org/html/rfc4511
   [LDAP]: https://hackage.haskell.org/package/LDAP

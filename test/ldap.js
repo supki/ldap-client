@@ -1,4 +1,4 @@
-#!/usr/bin/env nodejs
+#!/usr/bin/env js
 
 var fs = require('fs');
 var ldapjs = require('ldapjs');
@@ -183,6 +183,6 @@ server.compare('o=localhost', [], function(req, res, next) {
   return next(new ldapjs.NoSuchObjectError(req.dn.toString()));
 });
 
-server.listen(port, function() {
+server.listen(port, '0.0.0.0', function() {
   console.log("ldaps://localhost:%d", port);
 });

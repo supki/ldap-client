@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.AddSpec (spec) where
 
+import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Monoid ((<>))
 import           Test.Hspec
 
@@ -21,9 +21,9 @@ spec = do
   it "adds an entry" $ do
     res <- locally $ \l -> do
       Ldap.add l vulpix
-                 [ (Attr "cn",        ["vulpix"])
-                 , (Attr "evolution", ["0"])
-                 , (Attr "type",      ["fire"])
+                 [ (Attr "cn",        (NonEmpty.fromList ["vulpix"]))
+                 , (Attr "evolution", (NonEmpty.fromList ["0"]))
+                 , (Attr "type",      (NonEmpty.fromList ["fire"]))
                  ]
       res <- go l (Attr "cn" := "vulpix")
       dns res `shouldBe` [vulpix]

@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.SearchSpec (spec) where
 
+import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Monoid ((<>))
 import           Test.Hspec
 import           Ldap.Client as Ldap
@@ -70,17 +70,17 @@ spec = do
 
   it "‘and’ filter" $ do
     res <- locally $ \l -> do
-      res <- go l (And [ Attr "type" := "fire"
-                       , Attr "evolution" := "1"
-                       ])
+      res <- go l (And (NonEmpty.fromList [ Attr "type" := "fire"
+                                          , Attr "evolution" := "1"
+                                          ]))
       dns res `shouldBe` [charmeleon]
     res `shouldBe` Right ()
 
   it "‘or’ filter" $ do
     res <- locally $ \l -> do
-      res <- go l (Or [ Attr "type" := "fire"
-                      , Attr "evolution" := "1"
-                      ])
+      res <- go l (Or (NonEmpty.fromList [ Attr "type" := "fire"
+                                         , Attr "evolution" := "1"
+                                         ]))
       dns res `shouldMatchList`
         [ ivysaur
         , charizard
@@ -116,9 +116,9 @@ spec = do
 
   it "‘not’ filter" $ do
     res <- locally $ \l -> do
-      res <- go l (Not (Or [ Attr "type" := "fire"
-                           , Attr "evolution" :>= "1"
-                           ]))
+      res <- go l (Not (Or (NonEmpty.fromList [ Attr "type" := "fire"
+                                              , Attr "evolution" :>= "1"
+                                              ])))
       dns res `shouldMatchList`
         [ bulbasaur
         , squirtle

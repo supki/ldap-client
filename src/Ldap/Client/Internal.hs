@@ -32,6 +32,7 @@ import           Control.Exception (Exception, throwIO)
 import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
+import           Data.Typeable (Typeable)
 import           Network (PortNumber)
 
 import qualified Ldap.Asn1.Type as Type
@@ -71,7 +72,7 @@ newtype Password = Password ByteString
 data ResponseError =
     ResponseInvalid Request Response
   | ResponseErrorCode Request Type.ResultCode Dn Text
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable)
 
 instance Exception ResponseError
 
