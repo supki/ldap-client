@@ -65,7 +65,7 @@ import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Lazy as ByteString.Lazy
-import           Data.Foldable (traverse_, asum)
+import           Data.Foldable (asum)
 import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
@@ -97,6 +97,8 @@ import           Ldap.Client.Add (add)
 import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
 import           Ldap.Client.Extended (extended)
+
+{-# ANN module "HLint: ignore Use first" #-}
 
 
 newLdap :: IO Ldap
@@ -184,22 +186,33 @@ dispatch
   -> TQueue (Type.LdapMessage Request)
   -> IO a
 dispatch Ldap { client } inq outq =
-  flip fix (Map.empty, Map.empty, 1) $ \loop (!got, !results, !counter) ->
+  flip fix (Map.empty, 1) $ \loop (!req, !counter) ->
     loop =<< atomically (asum
       [ do New new var <- readTQueue client
            writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
-           return (got, Map.insert (Type.Id counter) var results, counter + 1)
-      , do Type.LdapMessage mid op _ <- readTQueue inq
-           case op of
-             Type.SearchResultEntry {} ->
-               return (Map.insertWith (++) mid [op] got, results, counter)
-             Type.SearchResultReference {} ->
-               return (got, results, counter)
-             Type.SearchResultDone {} -> do
-               let stack = Map.findWithDefault [] mid got
-               traverse_ (\var -> putTMVar var (op :| stack)) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
-             _ -> do
-               traverse_ (\var -> putTMVar var (op :| [])) (Map.lookup mid results)
-               return (Map.delete mid got, Map.delete mid results, counter)
+           return (Map.insert (Type.Id counter) ([], var) req, counter + 1)
+      , do Type.LdapMessage mid op _
+               <- readTQueue inq
+           res <- case op of
+             Type.BindResponse {}          -> done mid op req
+             Type.SearchResultEntry {}     -> saveUp mid op req
+             Type.SearchResultReference {} -> return req
+             Type.SearchResultDone {}      -> done mid op req
+             Type.ModifyResponse {}        -> done mid op req
+             Type.AddResponse {}           -> done mid op req
+             Type.DeleteResponse {}        -> done mid op req
+             Type.ModifyDnResponse {}      -> done mid op req
+             Type.CompareResponse {}       -> done mid op req
+             Type.ExtendedResponse {}      -> done mid op req
+             Type.IntermediateResponse {}  -> saveUp mid op req
+           return (res, counter)
       ])
+ where
+  saveUp mid op res =
+    return (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
+  done mid op req =
+    case Map.lookup mid req of
+      Nothing -> return req
+      Just (stack, var) -> do
+        putTMVar var (op :| stack)
+        return (Map.delete mid req)

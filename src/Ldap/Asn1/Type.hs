@@ -38,6 +38,7 @@ data ProtocolServerOp =
   | ModifyDnResponse LdapResult
   | CompareResponse LdapResult
   | ExtendedResponse LdapResult (Maybe LdapOid) (Maybe ByteString)
+  | IntermediateResponse (Maybe LdapOid) (Maybe ByteString)
     deriving (Show, Eq, Ord)
 
 data AuthenticationChoice = Simple ByteString

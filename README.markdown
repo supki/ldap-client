@@ -20,7 +20,7 @@ Modify DN Operation          | 4.9         | ✔
 Compare Operation            | 4.10        | ✔
 Abandon Operation            | 4.11        | ✘
 Extended Operation           | 4.12        | ✔
-IntermediateResponse Message | 4.13        | ✘
+IntermediateResponse Message | 4.13        | ✔
 StartTLS Operation           | 4.14        | ✔†
 LDAP over TLS                | -           | ✔
 

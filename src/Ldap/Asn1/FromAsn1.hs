@@ -295,7 +295,24 @@ DelResponse ::= [APPLICATION 11] LDAPResult
 @
 
 @
+ModifyDNResponse ::= [APPLICATION 13] LDAPResult
+@
+
+@
 CompareResponse ::= [APPLICATION 15] LDAPResult
+@
+
+@
+ExtendedResponse ::= [APPLICATION 24] SEQUENCE {
+     COMPONENTS OF LDAPResult,
+     responseName     [10] LDAPOID OPTIONAL,
+     responseValue    [11] OCTET STRING OPTIONAL }
+@
+
+@
+IntermediateResponse ::= [APPLICATION 25] SEQUENCE {
+     responseName     [0] LDAPOID OPTIONAL,
+     responseValue    [1] OCTET STRING OPTIONAL }
 @
 -}
 instance FromAsn1 ProtocolServerOp where
@@ -326,6 +343,15 @@ instance FromAsn1 ProtocolServerOp where
         return s
       Asn1.End (Asn1.Container Asn1.Application 24) <- next
       return (ExtendedResponse res (fmap LdapOid name) value)
+
+    , do
+      Asn1.Start (Asn1.Container Asn1.Application 25) <- next
+      name  <- optional fromAsn1
+      value <- optional $ do
+        Asn1.OctetString s <- next
+        return s
+      Asn1.End (Asn1.Container Asn1.Application 25) <- next
+      return (IntermediateResponse name value)
     ]
    where
     app l = do

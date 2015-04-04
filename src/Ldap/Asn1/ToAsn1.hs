@@ -372,11 +372,11 @@ MatchingRuleAssertion ::= SEQUENCE {
 @
 -}
 instance ToAsn1 MatchingRuleAssertion where
-  toAsn1 (MatchingRuleAssertion mmr mad (AssertionValue av) _) = (fold
+  toAsn1 (MatchingRuleAssertion mmr mad (AssertionValue av) _) = fold
     [ maybe mempty f mmr
     , maybe mempty g mad
     , other Asn1.Context 3 av
-    ])
+    ]
    where
     f (MatchingRuleId (LdapString x)) = other Asn1.Context 1 (Text.encodeUtf8 x)
     g (AttributeDescription (LdapString x)) = other Asn1.Context 2 (Text.encodeUtf8 x)
