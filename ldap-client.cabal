@@ -60,6 +60,7 @@ test-suite spec
   main-is:
     Spec.hs
   other-modules:
+    Ldap.ClientSpec
     Ldap.Client.AddSpec
     Ldap.Client.BindSpec
     Ldap.Client.CompareSpec

@@ -336,10 +336,10 @@ instance FromAsn1 ProtocolServerOp where
       Asn1.Start (Asn1.Container Asn1.Application 24) <- next
       res <- fromAsn1
       name <- optional $ do
-        Asn1.Other Asn1.Context 0 s <- next
+        Asn1.Other Asn1.Context 10 s <- next
         return s
       value <- optional $ do
-        Asn1.Other Asn1.Context 1 s <- next
+        Asn1.Other Asn1.Context 11 s <- next
         return s
       Asn1.End (Asn1.Container Asn1.Application 24) <- next
       return (ExtendedResponse res (fmap LdapOid name) value)

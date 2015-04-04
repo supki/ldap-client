@@ -11,7 +11,8 @@ This library implements (the parts of) [RFC 4511][rfc4511]
 :--------------------------- |:-----------:|:-----------:
 Bind Operation               | 4.2         | ✔
 Unbind Operation             | 4.3         | ✔
-Notice of Disconnection      | 4.4.1       | ✘
+Unsolicited Notification     | 4.4         | ✔
+Notice of Disconnection      | 4.4.1       | ✔
 Search Operation             | 4.5         | ✔\*
 Modify Operation             | 4.6         | ✔
 Add Operation                | 4.7         | ✔

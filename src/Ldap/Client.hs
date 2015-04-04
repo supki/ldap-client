@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client
   ( Host(..)
@@ -55,14 +56,15 @@ module Ldap.Client
 import           Control.Applicative ((<$>))
 #endif
 import qualified Control.Concurrent.Async as Async
-import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM (atomically, throwSTM)
 import           Control.Concurrent.STM.TMVar (putTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, writeTQueue, readTQueue)
-import           Control.Exception (Handler(..), bracket, throwIO, catches)
+import           Control.Exception (Exception, Handler(..), bracket, throwIO, catch, catches)
 import           Control.Monad (forever)
 import qualified Data.ASN1.BinaryEncoding as Asn1
 import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Lazy as ByteString.Lazy
 import           Data.Foldable (asum)
@@ -70,10 +72,13 @@ import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
 import           Data.Monoid (Endo(appEndo))
+import           Data.String (fromString)
+import           Data.Text (Text)
+import           Data.Typeable (Typeable)
 import           Network.Connection (Connection)
 import qualified Network.Connection as Conn
-import qualified System.IO.Error as IO
 import           Prelude hiding (compare)
+import qualified System.IO.Error as IO
 
 import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
@@ -109,7 +114,18 @@ data LdapError =
     IOError IOError
   | ParseError Asn1.ASN1Error
   | ResponseError ResponseError
+  | DisconnectError Disconnect
     deriving (Show, Eq)
+
+newtype WrappedIOError = WrappedIOError IOError
+    deriving (Show, Eq, Typeable)
+
+instance Exception WrappedIOError
+
+data Disconnect = Disconnect Type.ResultCode Dn Text
+    deriving (Show, Eq, Typeable)
+
+instance Exception Disconnect
 
 -- | The entrypoint into LDAP.
 with :: Host -> PortNumber -> (Ldap -> IO a) -> IO (Either LdapError a)
@@ -125,7 +141,7 @@ with host port f = do
             Async.withAsync (f l) $ \u ->
               fmap (Right . snd) (Async.waitAnyCancel [i, o, d, u])))
  `catches`
-  [ Handler (return . Left . IOError)
+  [ Handler (\(WrappedIOError e) -> return (Left (IOError e)))
   , Handler (return . Left . ParseError)
   , Handler (return . Left . ResponseError)
   ]
@@ -154,7 +170,7 @@ with host port f = do
     }
 
 input :: FromAsn1 a => TQueue a -> Connection -> IO b
-input inq conn = flip fix [] $ \loop chunks -> do
+input inq conn = wrap . flip fix [] $ \loop chunks -> do
   chunk <- Conn.connectionGet conn 8192
   case ByteString.length chunk of
     0 -> throwIO (IO.mkIOError IO.eofErrorType "Ldap.Client.input" Nothing Nothing)
@@ -174,7 +190,7 @@ input inq conn = flip fix [] $ \loop chunks -> do
           loop []
 
 output :: ToAsn1 a => TQueue a -> Connection -> IO b
-output out conn = forever $ do
+output out conn = wrap . forever $ do
   msg <- atomically (readTQueue out)
   Conn.connectionPut conn (encode (toAsn1 msg))
  where
@@ -203,16 +219,37 @@ dispatch Ldap { client } inq outq =
              Type.DeleteResponse {}        -> done mid op req
              Type.ModifyDnResponse {}      -> done mid op req
              Type.CompareResponse {}       -> done mid op req
-             Type.ExtendedResponse {}      -> done mid op req
+             Type.ExtendedResponse {}      -> probablyDisconnect mid op req
              Type.IntermediateResponse {}  -> saveUp mid op req
            return (res, counter)
       ])
  where
   saveUp mid op res =
     return (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
+
   done mid op req =
     case Map.lookup mid req of
       Nothing -> return req
       Just (stack, var) -> do
         putTMVar var (op :| stack)
         return (Map.delete mid req)
+
+  probablyDisconnect (Type.Id 0)
+                     (Type.ExtendedResponse
+                       (Type.LdapResult code
+                                        (Type.LdapDn (Type.LdapString dn))
+                                        (Type.LdapString reason)
+                                        _)
+                       moid _)
+                     req =
+    case moid of
+      Just (Type.LdapOid oid)
+        | oid == noticeOfDisconnection -> throwSTM (Disconnect code (Dn dn) reason)
+      _ -> return req
+  probablyDisconnect mid op req = done mid op req
+
+  noticeOfDisconnection :: ByteString
+  noticeOfDisconnection = fromString "1.3.6.1.4.1.1466.20036"
+
+wrap :: IO a -> IO a
+wrap m = m `catch` (throwIO . WrappedIOError)
