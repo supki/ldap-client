@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Ldap.Asn1.ToAsn1</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Ldap-Asn1-ToAsn1.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Ldap-Asn1-ToAsn1.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">ldap-client-0.1.0: Pure Haskell LDAP Client Library</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>None</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Ldap.Asn1.ToAsn1</p></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><span class="keyword">class</span> <a name="t:ToAsn1" class="def">ToAsn1</a> a <span class="keyword">where</span> <a href="src/Ldap-Asn1-ToAsn1.html#ToAsn1" class="link">Source</a></p><div class="subs methods"><p class="caption">Methods</p><p class="src"><a name="v:toAsn1" class="def">toAsn1</a> :: a -&gt; <a href="http://hackage.haskell.org/package/base/docs/Data-Monoid.html#t:Endo">Endo</a> [ASN1] <a href="src/Ldap-Asn1-ToAsn1.html#toAsn1" class="link">Source</a></p></div><div class="subs instances"><p id="control.i:ToAsn1" class="caption collapser" onclick="toggleSection('i:ToAsn1')">Instances</p><div id="section.i:ToAsn1" class="show"><table><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:LdapOid">LdapOid</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-64" class="link">Source</a></td><td class="doc"><pre>LDAPOID ::= OCTET STRING -- Constrained to &lt;numericoid&gt;
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:LdapString">LdapString</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-56" class="link">Source</a></td><td class="doc"><pre>LDAPString ::= OCTET STRING -- UTF-8 encoded
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:RelativeLdapDn">RelativeLdapDn</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-80" class="link">Source</a></td><td class="doc"><pre>RelativeLDAPDN ::= LDAPString -- Constrained to &lt;name-component&gt;
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:LdapDn">LdapDn</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-72" class="link">Source</a></td><td class="doc"><pre>LDAPDN ::= LDAPString -- Constrained to &lt;distinguishedName&gt;
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:PartialAttribute">PartialAttribute</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-125" class="link">Source</a></td><td class="doc"><pre>PartialAttribute ::= SEQUENCE {
+     type       AttributeDescription,
+     vals       SET OF value AttributeValue }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:Attribute">Attribute</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-135" class="link">Source</a></td><td class="doc"><pre>Attribute ::= PartialAttribute(WITH COMPONENTS {
+     ...,
+     vals (SIZE(1..MAX))})
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AssertionValue">AssertionValue</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-114" class="link">Source</a></td><td class="doc"><pre>AssertionValue ::= OCTET STRING
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AttributeValueAssertion">AttributeValueAssertion</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-106" class="link">Source</a></td><td class="doc"><pre>AttributeValueAssertion ::= SEQUENCE {
+     attributeDesc   AttributeDescription,
+     assertionValue  AssertionValue }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AttributeValue">AttributeValue</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-96" class="link">Source</a></td><td class="doc"><pre>AttributeValue ::= OCTET STRING
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AttributeDescription">AttributeDescription</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-88" class="link">Source</a></td><td class="doc"><pre>AttributeDescription ::= LDAPString
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:Control">Control</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-162" class="link">Source</a></td><td class="doc"><pre>Control ::= SEQUENCE {
+     controlType             LDAPOID,
+     criticality             BOOLEAN DEFAULT FALSE,
+     controlValue            OCTET STRING OPTIONAL }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:Controls">Controls</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-151" class="link">Source</a></td><td class="doc"><pre>Controls ::= SEQUENCE OF control Control
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AttributeList">AttributeList</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-387" class="link">Source</a></td><td class="doc"><pre>AttributeList ::= SEQUENCE OF attribute Attribute
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AttributeSelection">AttributeSelection</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-314" class="link">Source</a></td><td class="doc"><pre>AttributeSelection ::= SEQUENCE OF selector LDAPString
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:MatchingRuleId">MatchingRuleId</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-143" class="link">Source</a></td><td class="doc"><pre>MatchingRuleId ::= LDAPString
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:MatchingRuleAssertion">MatchingRuleAssertion</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-374" class="link">Source</a></td><td class="doc"><pre>MatchingRuleAssertion ::= SEQUENCE {
+     matchingRule    [1] MatchingRuleId OPTIONAL,
+     type            [2] AttributeDescription OPTIONAL,
+     matchValue      [3] AssertionValue,
+     dnAttributes    [4] BOOLEAN DEFAULT FALSE }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:SubstringFilter">SubstringFilter</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-358" class="link">Source</a></td><td class="doc"><pre>SubstringFilter ::= SEQUENCE {
+     type           AttributeDescription,
+     substrings     SEQUENCE SIZE (1..MAX) OF substring CHOICE {
+          initial [0] AssertionValue,  -- can occur at most once
+          any     [1] AssertionValue,
+          final   [2] AssertionValue } -- can occur at most once
+     }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:Filter">Filter</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-333" class="link">Source</a></td><td class="doc"><pre>Filter ::= CHOICE {
+     and             [0] SET SIZE (1..MAX) OF filter Filter,
+     or              [1] SET SIZE (1..MAX) OF filter Filter,
+     not             [2] Filter,
+     equalityMatch   [3] AttributeValueAssertion,
+     substrings      [4] SubstringFilter,
+     greaterOrEqual  [5] AttributeValueAssertion,
+     lessOrEqual     [6] AttributeValueAssertion,
+     present         [7] AttributeDescription,
+     approxMatch     [8] AttributeValueAssertion,
+     extensibleMatch [9] MatchingRuleAssertion,
+     ...  }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:AuthenticationChoice">AuthenticationChoice</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-306" class="link">Source</a></td><td class="doc"><pre>AuthenticationChoice ::= CHOICE {
+     simple                  [0] OCTET STRING,
+     ...  }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:ProtocolClientOp">ProtocolClientOp</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-244" class="link">Source</a></td><td class="doc"><pre>BindRequest ::= [APPLICATION 0] SEQUENCE {
+     version                 INTEGER (1 ..  127),
+     name                    LDAPDN,
+     authentication          AuthenticationChoice }
+</pre><pre>UnbindRequest ::= [APPLICATION 2] NULL
+</pre><pre>SearchRequest ::= [APPLICATION 3] SEQUENCE {
+     baseObject      LDAPDN,
+     scope           ENUMERATED {
+          baseObject              (0),
+          singleLevel             (1),
+          wholeSubtree            (2),
+          ...  },
+     derefAliases    ENUMERATED {
+          neverDerefAliases       (0),
+          derefInSearching        (1),
+          derefFindingBaseObj     (2),
+          derefAlways             (3) },
+     sizeLimit       INTEGER (0 ..  maxInt),
+     timeLimit       INTEGER (0 ..  maxInt),
+     typesOnly       BOOLEAN,
+     filter          Filter,
+     attributes      AttributeSelection }
+</pre><pre>ModifyRequest ::= [APPLICATION 6] SEQUENCE {
+     object          LDAPDN,
+     changes         SEQUENCE OF change SEQUENCE {
+          operation       ENUMERATED {
+               add     (0),
+               delete  (1),
+               replace (2),
+               ...  },
+          modification    PartialAttribute } }
+</pre><pre>AddRequest ::= [APPLICATION 8] SEQUENCE {
+     entry           LDAPDN,
+     attributes      AttributeList }
+</pre><pre>DelRequest ::= [APPLICATION 10] LDAPDN
+</pre><pre>ModifyDNRequest ::= [APPLICATION 12] SEQUENCE {
+     entry           LDAPDN,
+     newrdn          RelativeLDAPDN,
+     deleteoldrdn    BOOLEAN,
+     newSuperior     [0] LDAPDN OPTIONAL }
+</pre><pre>CompareRequest ::= [APPLICATION 14] SEQUENCE {
+     entry           LDAPDN,
+     ava             AttributeValueAssertion }
+</pre><pre>ExtendedRequest ::= [APPLICATION 23] SEQUENCE {
+     requestName      [0] LDAPOID,
+     requestValue     [1] OCTET STRING OPTIONAL }
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> <a href="Ldap-Asn1-Type.html#t:Id">Id</a> <a href="src/Ldap-Asn1-ToAsn1.html#line-48" class="link">Source</a></td><td class="doc"><pre>MessageID ::= INTEGER (0 ..  maxInt)
+</pre></td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> a =&gt; <a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> [a] <a href="src/Ldap-Asn1-ToAsn1.html#line-390" class="link">Source</a></td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> a =&gt; <a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> (<a href="Ldap-Client.html#t:NonEmpty">NonEmpty</a> a) <a href="src/Ldap-Asn1-ToAsn1.html#line-393" class="link">Source</a></td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> op =&gt; <a href="Ldap-Asn1-ToAsn1.html#t:ToAsn1">ToAsn1</a> (<a href="Ldap-Asn1-Type.html#t:LdapMessage">LdapMessage</a> op) <a href="src/Ldap-Asn1-ToAsn1.html#line-39" class="link">Source</a></td><td class="doc"><pre>LDAPMessage ::= SEQUENCE {
+     messageID       MessageID,
+     protocolOp      CHOICE {
+          bindRequest           BindRequest,
+          bindResponse          BindResponse,
+          unbindRequest         UnbindRequest,
+          searchRequest         SearchRequest,
+          searchResEntry        SearchResultEntry,
+          searchResDone         SearchResultDone,
+          searchResRef          SearchResultReference,
+          addRequest            AddRequest,
+          addResponse           AddResponse,
+          ... },
+     controls       [0] Controls OPTIONAL }
+</pre></td></tr></table></div></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.16.0</p></div></body></html>
