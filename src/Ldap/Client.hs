@@ -3,21 +3,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client
   ( Host(..)
-  , PortNumber
   , Ldap
   , LdapError(..)
   , ResponseError(..)
   , Type.ResultCode(..)
   , Async
   , with
-    -- * Bind Operation
-  , Dn(..)
-  , Password(..)
+    -- * Bind
   , bind
-    -- * Search Operation
-  , Attr(..)
+    -- * Search
   , search
+  , SearchEntry(..)
+    -- ** Search modifiers
   , Search
+  , Mod
   , scope
   , Type.Scope(..)
   , size
@@ -25,26 +24,31 @@ module Ldap.Client
   , typesOnly
   , derefAliases
   , Filter(..)
-  , SearchEntry(..)
-    -- * Modify Operation
-  , Operation(..)
+    -- * Modify
   , modify
-    -- * Add Operation
-  , AttrList
+  , Operation(..)
+    -- * Add
   , add
-    -- * Delete Operation
+    -- * Delete
   , delete
-    -- * ModifyDn Operation
-  , RelativeDn(..)
+    -- * ModifyDn
   , modifyDn
-    -- * Compare Operation
+    -- * Compare
   , compare
-    -- * Extended Operation
-  , Oid(..)
+    -- * Extended
   , extended
-    -- * Waiting for Operation Completion
+    -- * Waiting for completion
   , wait
-  , waitSTM
+    -- * Miscellanous
+  , Dn(..)
+  , RelativeDn(..)
+  , Oid(..)
+  , Password(..)
+  , AttrList
+  , Attr(..)
+    -- * Re-exports
+  , NonEmpty
+  , PortNumber
   ) where
 
 #if __GLASGOW_HASKELL__ < 710
@@ -79,6 +83,7 @@ import           Ldap.Client.Bind (bind, unbindAsync)
 import           Ldap.Client.Search
   ( search
   , Search
+  , Mod
   , scope
   , size
   , time

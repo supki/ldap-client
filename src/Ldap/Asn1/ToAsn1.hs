@@ -1,11 +1,12 @@
 module Ldap.Asn1.ToAsn1
-  ( ToAsn1(..)
+  ( ToAsn1(toAsn1)
   ) where
 
 import           Data.ASN1.Types (ASN1, ASN1Class, ASN1Tag, ASN1ConstructionType)
 import qualified Data.ASN1.Types as Asn1
 import           Data.ByteString (ByteString)
 import           Data.Foldable (fold, foldMap)
+import           Data.List.NonEmpty (NonEmpty)
 import           Data.Maybe (Maybe, maybe)
 import           Data.Monoid (Endo(Endo), (<>), mempty)
 import qualified Data.Text.Encoding as Text
@@ -18,6 +19,7 @@ class ToAsn1 a where
   toAsn1 :: a -> Endo [ASN1]
 
 {- |
+@
 LDAPMessage ::= SEQUENCE {
      messageID       MessageID,
      protocolOp      CHOICE {
@@ -32,101 +34,130 @@ LDAPMessage ::= SEQUENCE {
           addResponse           AddResponse,
           ... },
      controls       [0] Controls OPTIONAL }
+@
 -}
 instance ToAsn1 op => ToAsn1 (LdapMessage op) where
   toAsn1 (LdapMessage i op mc) =
     sequence (toAsn1 i <> toAsn1 op <> maybe mempty (context 0 . toAsn1) mc)
 
 {- |
+@
 MessageID ::= INTEGER (0 ..  maxInt)
+@
 -}
 instance ToAsn1 Id where
   toAsn1 (Id i) = single (Asn1.IntVal (fromIntegral i))
 
 {- |
+@
 LDAPString ::= OCTET STRING -- UTF-8 encoded
+@
 -}
 instance ToAsn1 LdapString where
   toAsn1 (LdapString s) = single (Asn1.OctetString (Text.encodeUtf8 s))
 
 {- |
-LDAPOID ::= OCTET STRING -- Constrained to <numericoid>
+@
+LDAPOID ::= OCTET STRING -- Constrained to \<numericoid\>
+@
 -}
 instance ToAsn1 LdapOid where
   toAsn1 (LdapOid s) = single (Asn1.OctetString s)
 
 {- |
-LDAPDN ::= LDAPString -- Constrained to <distinguishedName>
+@
+LDAPDN ::= LDAPString -- Constrained to \<distinguishedName\>
+@
 -}
 instance ToAsn1 LdapDn where
   toAsn1 (LdapDn s) = toAsn1 s
 
 {- |
-RelativeLDAPDN ::= LDAPString -- Constrained to <name-component>
+@
+RelativeLDAPDN ::= LDAPString -- Constrained to \<name-component\>
+@
 -}
 instance ToAsn1 RelativeLdapDn where
   toAsn1 (RelativeLdapDn s) = toAsn1 s
 
 {- |
+@
 AttributeDescription ::= LDAPString
+@
 -}
 instance ToAsn1 AttributeDescription where
   toAsn1 (AttributeDescription s) = toAsn1 s
 
 {- |
+@
 AttributeValue ::= OCTET STRING
+@
 -}
 instance ToAsn1 AttributeValue where
   toAsn1 (AttributeValue s) = single (Asn1.OctetString s)
 
 {- |
+@
 AttributeValueAssertion ::= SEQUENCE {
      attributeDesc   AttributeDescription,
      assertionValue  AssertionValue }
+@
 -}
 instance ToAsn1 AttributeValueAssertion where
   toAsn1 (AttributeValueAssertion d v) = toAsn1 d <> toAsn1 v
 
 {- |
+@
 AssertionValue ::= OCTET STRING
+@
 -}
 instance ToAsn1 AssertionValue where
   toAsn1 (AssertionValue s) = single (Asn1.OctetString s)
 
 
 {- |
+@
 PartialAttribute ::= SEQUENCE {
      type       AttributeDescription,
      vals       SET OF value AttributeValue }
+@
 -}
 instance ToAsn1 PartialAttribute where
-  toAsn1 (PartialAttribute d xs) = sequence (toAsn1 d <> set (foldMap toAsn1 xs))
+  toAsn1 (PartialAttribute d xs) = sequence (toAsn1 d <> set (toAsn1 xs))
 
 {- |
+@
 Attribute ::= PartialAttribute(WITH COMPONENTS {
      ...,
      vals (SIZE(1..MAX))})
+@
 -}
 instance ToAsn1 Attribute where
-  toAsn1 (Attribute d xs) = sequence (toAsn1 d <> set (foldMap toAsn1 xs))
+  toAsn1 (Attribute d xs) = sequence (toAsn1 d <> set (toAsn1 xs))
 
 {- |
+@
 MatchingRuleId ::= LDAPString
+@
 -}
 instance ToAsn1 MatchingRuleId where
   toAsn1 (MatchingRuleId s) = toAsn1 s
 
 {- |
+@
 Controls ::= SEQUENCE OF control Control
+@
 -}
 instance ToAsn1 Controls where
-  toAsn1 (Controls cs) = sequence (foldMap toAsn1 cs)
+  toAsn1 (Controls cs) = sequence (toAsn1 cs)
 
 {- |
+@
 Control ::= SEQUENCE {
      controlType             LDAPOID,
      criticality             BOOLEAN DEFAULT FALSE,
      controlValue            OCTET STRING OPTIONAL }
+@
 -}
 instance ToAsn1 Control where
   toAsn1 (Control t c v) =
@@ -137,13 +168,18 @@ instance ToAsn1 Control where
       ])
 
 {- |
+@
 BindRequest ::= [APPLICATION 0] SEQUENCE {
      version                 INTEGER (1 ..  127),
      name                    LDAPDN,
      authentication          AuthenticationChoice }
+@
 
+@
 UnbindRequest ::= [APPLICATION 2] NULL
+@
 
+@
 SearchRequest ::= [APPLICATION 3] SEQUENCE {
      baseObject      LDAPDN,
      scope           ENUMERATED {
@@ -161,7 +197,9 @@ SearchRequest ::= [APPLICATION 3] SEQUENCE {
      typesOnly       BOOLEAN,
      filter          Filter,
      attributes      AttributeSelection }
+@
 
+@
 ModifyRequest ::= [APPLICATION 6] SEQUENCE {
      object          LDAPDN,
      changes         SEQUENCE OF change SEQUENCE {
@@ -171,27 +209,37 @@ ModifyRequest ::= [APPLICATION 6] SEQUENCE {
                replace (2),
                ...  },
           modification    PartialAttribute } }
+@
 
+@
 AddRequest ::= [APPLICATION 8] SEQUENCE {
      entry           LDAPDN,
      attributes      AttributeList }
+@
 
+@
 DelRequest ::= [APPLICATION 10] LDAPDN
+@
 
+@
 ModifyDNRequest ::= [APPLICATION 12] SEQUENCE {
      entry           LDAPDN,
      newrdn          RelativeLDAPDN,
      deleteoldrdn    BOOLEAN,
      newSuperior     [0] LDAPDN OPTIONAL }
+@
 
+@
 CompareRequest ::= [APPLICATION 14] SEQUENCE {
      entry           LDAPDN,
      ava             AttributeValueAssertion }
+@
 
+@
 ExtendedRequest ::= [APPLICATION 23] SEQUENCE {
      requestName      [0] LDAPOID,
      requestValue     [1] OCTET STRING OPTIONAL }
-
+@
 -}
 instance ToAsn1 ProtocolClientOp where
   toAsn1 (BindRequest v n a) =
@@ -249,20 +297,25 @@ instance ToAsn1 ProtocolClientOp where
      ])
 
 {- |
+@
 AuthenticationChoice ::= CHOICE {
      simple                  [0] OCTET STRING,
      ...  }
+@
 -}
 instance ToAsn1 AuthenticationChoice where
   toAsn1 (Simple s) = other Asn1.Context 0 s
 
 {- |
+@
 AttributeSelection ::= SEQUENCE OF selector LDAPString
+@
 -}
 instance ToAsn1 AttributeSelection where
-  toAsn1 (AttributeSelection as) = sequence (foldMap toAsn1 as)
+  toAsn1 (AttributeSelection as) = sequence (toAsn1 as)
 
 {- |
+@
 Filter ::= CHOICE {
      and             [0] SET SIZE (1..MAX) OF filter Filter,
      or              [1] SET SIZE (1..MAX) OF filter Filter,
@@ -275,11 +328,12 @@ Filter ::= CHOICE {
      approxMatch     [8] AttributeValueAssertion,
      extensibleMatch [9] MatchingRuleAssertion,
      ...  }
+@
 -}
 instance ToAsn1 Filter where
   toAsn1 f = case f of
-    And xs            -> context 0 (foldMap toAsn1 xs)
-    Or xs             -> context 1 (foldMap toAsn1 xs)
+    And xs            -> context 0 (toAsn1 xs)
+    Or xs             -> context 1 (toAsn1 xs)
     Not x             -> context 2 (toAsn1 x)
     EqualityMatch x   -> context 3 (toAsn1 x)
     Substrings x      -> context 4 (toAsn1 x)
@@ -291,6 +345,7 @@ instance ToAsn1 Filter where
     ExtensibleMatch x -> context 9 (toAsn1 x)
 
 {- |
+@
 SubstringFilter ::= SEQUENCE {
      type           AttributeDescription,
      substrings     SEQUENCE SIZE (1..MAX) OF substring CHOICE {
@@ -298,6 +353,7 @@ SubstringFilter ::= SEQUENCE {
           any     [1] AssertionValue,
           final   [2] AssertionValue } -- can occur at most once
      }
+@
 -}
 instance ToAsn1 SubstringFilter where
   toAsn1 (SubstringFilter ad ss) =
@@ -307,11 +363,13 @@ instance ToAsn1 SubstringFilter where
       Final (AssertionValue v)   -> other Asn1.Context 2 v) ss)
 
 {- |
+@
 MatchingRuleAssertion ::= SEQUENCE {
      matchingRule    [1] MatchingRuleId OPTIONAL,
      type            [2] AttributeDescription OPTIONAL,
      matchValue      [3] AssertionValue,
      dnAttributes    [4] BOOLEAN DEFAULT FALSE }
+@
 -}
 instance ToAsn1 MatchingRuleAssertion where
   toAsn1 (MatchingRuleAssertion mmr mad av b) = sequence (fold
@@ -322,10 +380,18 @@ instance ToAsn1 MatchingRuleAssertion where
     ])
 
 {- |
+@
 AttributeList ::= SEQUENCE OF attribute Attribute
+@
 -}
 instance ToAsn1 AttributeList where
-  toAsn1 (AttributeList xs) = sequence (foldMap toAsn1 xs)
+  toAsn1 (AttributeList xs) = sequence (toAsn1 xs)
+
+instance ToAsn1 a => ToAsn1 [a] where
+  toAsn1 = foldMap toAsn1
+
+instance ToAsn1 a => ToAsn1 (NonEmpty a) where
+  toAsn1 = foldMap toAsn1
 
 sequence :: Endo [ASN1] -> Endo [ASN1]
 sequence = construction Asn1.Sequence

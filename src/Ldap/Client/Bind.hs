@@ -15,8 +15,6 @@ import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
--- | Throws 'BindError' on failure. Don't worry, the nearest 'with'
--- will catch it, so it won't destroy your program.
 bind :: Ldap -> Dn -> Password -> IO ()
 bind l username password =
   raise =<< bindEither l username password

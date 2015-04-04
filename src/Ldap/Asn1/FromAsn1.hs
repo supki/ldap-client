@@ -29,6 +29,7 @@ class FromAsn1 a where
   fromAsn1 :: Parser [ASN1] a
 
 {- |
+@
 LDAPMessage ::= SEQUENCE {
      messageID       MessageID,
      protocolOp      CHOICE {
@@ -43,6 +44,7 @@ LDAPMessage ::= SEQUENCE {
           addResponse           AddResponse,
           ... },
      controls       [0] Controls OPTIONAL }
+@
 -}
 instance FromAsn1 op =>  FromAsn1 (LdapMessage op) where
   fromAsn1 = do
@@ -53,7 +55,9 @@ instance FromAsn1 op =>  FromAsn1 (LdapMessage op) where
     return (LdapMessage i op Nothing)
 
 {- |
+@
 MessageID ::= INTEGER (0 ..  maxInt)
+@
 -}
 instance FromAsn1 Id where
   fromAsn1 = do
@@ -61,7 +65,9 @@ instance FromAsn1 Id where
     return (Id (fromIntegral i))
 
 {- |
+@
 LDAPString ::= OCTET STRING -- UTF-8 encoded,
+@
 -}
 instance FromAsn1 LdapString where
   fromAsn1 = do
@@ -71,7 +77,9 @@ instance FromAsn1 LdapString where
       Left  _ -> empty
 
 {- |
-LDAPOID ::= OCTET STRING -- Constrained to <numericoid>
+@
+LDAPOID ::= OCTET STRING -- Constrained to \<numericoid\>
+@
 -}
 instance FromAsn1 LdapOid where
   fromAsn1 = do
@@ -79,19 +87,25 @@ instance FromAsn1 LdapOid where
     return (LdapOid s)
 
 {- |
+@
 LDAPDN ::= LDAPString
+@
 -}
 instance FromAsn1 LdapDn where
   fromAsn1 = fmap LdapDn fromAsn1
 
 {- |
+@
 AttributeDescription ::= LDAPString
+@
 -}
 instance FromAsn1 AttributeDescription where
   fromAsn1 = fmap AttributeDescription fromAsn1
 
 {- |
+@
 AttributeValue ::= OCTET STRING
+@
 -}
 instance FromAsn1 AttributeValue where
   fromAsn1 = do
@@ -99,9 +113,11 @@ instance FromAsn1 AttributeValue where
     return (AttributeValue s)
 
 {- |
+@
 PartialAttribute ::= SEQUENCE {
      type       AttributeDescription,
      vals       SET OF value AttributeValue }
+@
 -}
 instance FromAsn1 PartialAttribute where
   fromAsn1 = do
@@ -114,6 +130,7 @@ instance FromAsn1 PartialAttribute where
     return (PartialAttribute d vs)
 
 {- |
+@
 LDAPResult ::= SEQUENCE {
      resultCode         ENUMERATED {
           success                      (0),
@@ -166,6 +183,7 @@ LDAPResult ::= SEQUENCE {
      matchedDN          LDAPDN,
      diagnosticMessage  LDAPString,
      referral           [3] Referral OPTIONAL }
+@
 -}
 instance FromAsn1 LdapResult where
   fromAsn1 = do
@@ -223,7 +241,9 @@ instance FromAsn1 LdapResult where
     return (LdapResult resultCode matchedDn diagnosticMessage referral)
 
 {- |
+@
 Referral ::= SEQUENCE SIZE (1..MAX) OF uri URI
+@
 -}
 instance FromAsn1 ReferralUris where
   fromAsn1 = do
@@ -233,29 +253,45 @@ instance FromAsn1 ReferralUris where
     return (ReferralUris xs)
 
 {- |
+@
 URI ::= LDAPString
+@
 -}
 instance FromAsn1 Uri where
   fromAsn1 = fmap Uri fromAsn1
 
 {- |
+@
 BindResponse ::= [APPLICATION 1] SEQUENCE {
      COMPONENTS OF LDAPResult,
      serverSaslCreds    [7] OCTET STRING OPTIONAL }
+@
 
+@
 SearchResultEntry ::= [APPLICATION 4] SEQUENCE {
      objectName      LDAPDN,
      attributes      PartialAttributeList }
+@
 
+@
 SearchResultDone ::= [APPLICATION 5] LDAPResult
+@
 
+@
 ModifyResponse ::= [APPLICATION 7] LDAPResult
+@
 
+@
 AddResponse ::= [APPLICATION 9] LDAPResult
+@
 
+@
 DelResponse ::= [APPLICATION 11] LDAPResult
+@
 
+@
 CompareResponse ::= [APPLICATION 15] LDAPResult
+@
 -}
 instance FromAsn1 ProtocolServerOp where
   fromAsn1 = asum
@@ -289,7 +325,9 @@ instance FromAsn1 ProtocolServerOp where
       return res
 
 {- |
+@
 PartialAttributeList ::= SEQUENCE OF partialAttribute PartialAttribute
+@
 -}
 instance FromAsn1 PartialAttributeList where
   fromAsn1 = do

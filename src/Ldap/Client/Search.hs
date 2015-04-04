@@ -6,6 +6,7 @@ module Ldap.Client.Search
   , searchAsync
   , searchAsyncSTM
   , Search
+  , Mod
   , Type.Scope(..)
   , scope
   , size
