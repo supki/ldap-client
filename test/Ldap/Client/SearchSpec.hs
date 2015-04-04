@@ -59,7 +59,7 @@ spec = do
       dns res `shouldBe` [pikachu]
     res `shouldBe` Right ()
 
-  it "‘equality match’ filter" $ do
+  it "‘equality’ filter" $ do
     res <- locally $ \l -> do
       res <- go l (Attr "type" := "flying")
       dns res `shouldMatchList`
@@ -145,5 +145,23 @@ spec = do
       dns z `shouldMatchList`
         [ blastoise
         , wartortle
+        ]
+    res `shouldBe` Right ()
+
+  it "‘approximate’ filter (actually, another ‘equality’ filter)" $ do
+    res <- locally $ \l -> do
+      res <- go l (Attr "type" :~= "flying")
+      dns res `shouldMatchList`
+        [ butterfree
+        , charizard
+        ]
+    res `shouldBe` Right ()
+
+  it "‘extensible’ filter" $ do
+    res <- locally $ \l -> do
+      res <- go l ((Just (Attr "type"), Nothing, True) ::= "flying")
+      dns res `shouldMatchList`
+        [ butterfree
+        , charizard
         ]
     res `shouldBe` Right ()

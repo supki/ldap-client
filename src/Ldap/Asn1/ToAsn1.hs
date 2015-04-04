@@ -7,7 +7,7 @@ import qualified Data.ASN1.Types as Asn1
 import           Data.ByteString (ByteString)
 import           Data.Foldable (fold, foldMap)
 import           Data.List.NonEmpty (NonEmpty)
-import           Data.Maybe (Maybe, maybe)
+import           Data.Maybe (maybe)
 import           Data.Monoid (Endo(Endo), (<>), mempty)
 import qualified Data.Text.Encoding as Text
 import           Prelude (Integer, (.), fromIntegral)
@@ -372,12 +372,14 @@ MatchingRuleAssertion ::= SEQUENCE {
 @
 -}
 instance ToAsn1 MatchingRuleAssertion where
-  toAsn1 (MatchingRuleAssertion mmr mad av b) = sequence (fold
-    [ context 1 (optional mmr)
-    , context 2 (optional mad)
-    , context 3 (toAsn1 av)
-    , context 4 (single (Asn1.Boolean b))
+  toAsn1 (MatchingRuleAssertion mmr mad (AssertionValue av) _) = (fold
+    [ maybe mempty f mmr
+    , maybe mempty g mad
+    , other Asn1.Context 3 av
     ])
+   where
+    f (MatchingRuleId (LdapString x)) = other Asn1.Context 1 (Text.encodeUtf8 x)
+    g (AttributeDescription (LdapString x)) = other Asn1.Context 2 (Text.encodeUtf8 x)
 
 {- |
 @
@@ -410,9 +412,6 @@ construction t x = single (Asn1.Start t) <> x <> single (Asn1.End t)
 
 other :: ASN1Class -> ASN1Tag -> ByteString -> Endo [ASN1]
 other c t = single . Asn1.Other c t
-
-optional :: ToAsn1 a => Maybe a -> Endo [ASN1]
-optional = maybe mempty toAsn1
 
 enum :: Integer -> Endo [ASN1]
 enum = single . Asn1.Enumerated

@@ -274,6 +274,11 @@ SearchResultEntry ::= [APPLICATION 4] SEQUENCE {
 @
 
 @
+SearchResultReference ::= [APPLICATION 19] SEQUENCE
+                          SIZE (1..MAX) OF uri URI
+@
+
+@
 SearchResultDone ::= [APPLICATION 5] LDAPResult
 @
 
@@ -303,6 +308,13 @@ instance FromAsn1 ProtocolServerOp where
     , fmap DeleteResponse (app 11)
     , fmap ModifyDnResponse (app 13)
     , fmap CompareResponse (app 15)
+
+    , do
+      Asn1.Start (Asn1.Container Asn1.Application 19) <- next
+      uris <- some1 fromAsn1
+      Asn1.End (Asn1.Container Asn1.Application 19) <- next
+      return (SearchResultReference uris)
+
     , do
       Asn1.Start (Asn1.Container Asn1.Application 24) <- next
       res <- fromAsn1

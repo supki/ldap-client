@@ -1,4 +1,5 @@
-**NOTE: This is work in progress. Don't use it! If you really need LDAP integration, check out [LDAP][LDAP]**
+:warning:
+**This is work in progress. Use [LDAP][LDAP] if you need LDAP integration.**
 
 ldap-client
 ===========
@@ -23,7 +24,7 @@ IntermediateResponse Message | 4.13        | ✘
 StartTLS Operation           | 4.14        | ✔†
 LDAP over TLS                | -           | ✔
 
-\* Approximate and extensible matches are untested, so probably do not work  
+\* The `:dn` thing is unsupported in Extensible matches  
 † Only serves as an example of Extended Operation.  It's useless for all practical purposes as it does not actually enable TLS.  In other words, use LDAP over TLS instead.
 
   [rfc4511]: https://tools.ietf.org/html/rfc4511
