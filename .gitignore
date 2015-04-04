@@ -1,0 +1,8 @@
+dist/
+.cabal-sandbox/
+cabal.sandbox.config
+node_modules
+Gemfile.lock
+result
+env.nix
+*.hs
