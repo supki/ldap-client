@@ -1,13 +1,23 @@
+-- | <https://tools.ietf.org/html/rfc4511#section-4.2 Bind> operation.
+--
+-- This operation comes in four flavours:
+--
+--   * synchronous, exception throwing ('bind')
+--
+--   * synchronous, returning 'Either' 'ResponseError' @()@ ('bindEither')
+--
+--   * asynchronous, 'IO' based ('bindAsync')
+--
+--   * asynchronous, 'STM' based ('bindAsyncSTM')
+--
+-- Of those, the first one ('bind') is probably the most useful for the typical usecase.
 module Ldap.Client.Bind
   ( bind
   , bindEither
   , bindAsync
   , bindAsyncSTM
-  , unbindAsync
-  , unbindAsyncSTM
   ) where
 
-import           Control.Monad (void)
 import           Control.Monad.STM (STM, atomically)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 
@@ -15,18 +25,27 @@ import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
+-- | Perform the Bind operation synchronously. Raises 'ResponseError' on failures.
 bind :: Ldap -> Dn -> Password -> IO ()
 bind l username password =
   raise =<< bindEither l username password
 
+-- | Perform the Bind operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 bindEither :: Ldap -> Dn -> Password -> IO (Either ResponseError ())
 bindEither l username password =
   wait =<< bindAsync l username password
 
+-- | Perform the Bind operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 bindAsync :: Ldap -> Dn -> Password -> IO (Async ())
 bindAsync l username password =
   atomically (bindAsyncSTM l username password)
 
+-- | Perform the Bind operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
 bindAsyncSTM :: Ldap -> Dn -> Password -> STM (Async ())
 bindAsyncSTM l username password =
   let req = bindRequest username password in sendRequest l (bindResult req) req
@@ -45,22 +64,3 @@ bindResult req (Type.BindResponse (Type.LdapResult code (Type.LdapDn (Type.LdapS
   | Type.Success <- code = Right ()
   | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
 bindResult req res = Left (ResponseInvalid req res)
-
-
--- | Note that 'unbindAsync' does not return an 'Async',
--- because LDAP server never responds to @UnbindRequest@s, hence
--- a call to 'wait' on a hypothetical 'Async' would have resulted
--- in an exception anyway.
-unbindAsync :: Ldap -> IO ()
-unbindAsync =
-  atomically . unbindAsyncSTM
-
--- | Note that 'unbindAsyncSTM' does not return an 'Async',
--- because LDAP server never responds to @UnbindRequest@s, hence
--- a call to 'wait' on a hypothetical 'Async' would have resulted
--- in an exception anyway.
-unbindAsyncSTM :: Ldap -> STM ()
-unbindAsyncSTM l =
-  void (sendRequest l die Type.UnbindRequest)
- where
-  die = error "Ldap.Client: do not wait for the response to UnbindRequest"

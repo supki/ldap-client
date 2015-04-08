@@ -47,6 +47,7 @@ module Ldap.Client
   , Password(..)
   , AttrList
   , Attr(..)
+  , AttrValue
     -- * Re-exports
   , NonEmpty
   , PortNumber
@@ -64,7 +65,6 @@ import           Control.Monad (forever)
 import qualified Data.ASN1.BinaryEncoding as Asn1
 import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Lazy as ByteString.Lazy
 import           Data.Foldable (asum)
@@ -84,7 +84,7 @@ import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
-import           Ldap.Client.Bind (bind, unbindAsync)
+import           Ldap.Client.Bind (bind)
 import           Ldap.Client.Search
   ( search
   , Search
@@ -248,7 +248,7 @@ dispatch Ldap { client } inq outq =
       _ -> return req
   probablyDisconnect mid op req = done mid op req
 
-  noticeOfDisconnection :: ByteString
+  noticeOfDisconnection :: Text
   noticeOfDisconnection = fromString "1.3.6.1.4.1.1466.20036"
 
 wrap :: IO a -> IO a

@@ -12,6 +12,8 @@ module Ldap.Client.Internal
     -- * Waiting for Request Completion
   , wait
   , waitSTM
+  , unbindAsync
+  , unbindAsyncSTM
     -- * Misc
   , Response
   , ResponseError(..)
@@ -22,6 +24,7 @@ module Ldap.Client.Internal
   , RelativeDn(..)
   , Password(..)
   , Attr(..)
+  , AttrValue
   , unAttr
   ) where
 
@@ -29,6 +32,7 @@ import           Control.Concurrent.STM (STM, atomically)
 import           Control.Concurrent.STM.TMVar (TMVar, newEmptyTMVar, readTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, writeTQueue)
 import           Control.Exception (Exception, throwIO)
+import           Control.Monad (void)
 import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
@@ -58,19 +62,17 @@ data Async a = Async (STM (Either ResponseError a))
 instance Functor Async where
   fmap f (Async stm) = Async (fmap (fmap f) stm)
 
-
 newtype Dn = Dn Text
     deriving (Show, Eq)
 
 newtype RelativeDn = RelativeDn Text
     deriving (Show, Eq)
 
-newtype Oid = Oid ByteString
+newtype Oid = Oid Text
     deriving (Show, Eq)
 
 newtype Password = Password ByteString
     deriving (Show, Eq)
-
 
 data ResponseError =
     ResponseInvalid Request Response
@@ -79,25 +81,23 @@ data ResponseError =
 
 instance Exception ResponseError
 
-
-
 newtype Attr = Attr Text
     deriving (Show, Eq)
 
-type AttrList f = [(Attr, f ByteString)]
+type AttrValue = ByteString
+
+type AttrList f = [(Attr, f AttrValue)]
 
 -- 'Attr' unwrapper. This is a separate function not to turn 'Attr''s
 -- 'Show' instance into complete and utter shit.
 unAttr :: Attr -> Text
 unAttr (Attr a) = a
 
-
 wait :: Async a -> IO (Either ResponseError a)
 wait = atomically . waitSTM
 
 waitSTM :: Async a -> STM (Either ResponseError a)
 waitSTM (Async stm) = stm
-
 
 sendRequest :: Ldap -> (Response -> Either ResponseError a) -> Request -> STM (Async a)
 sendRequest l p msg =
@@ -110,3 +110,22 @@ writeRequest Ldap { client } var msg = writeTQueue client (New msg var)
 
 raise :: Exception e => Either e a -> IO a
 raise = either throwIO return
+
+
+-- | Note that 'unbindAsync' does not return an 'Async',
+-- because LDAP server never responds to @UnbindRequest@s, hence
+-- a call to 'wait' on a hypothetical 'Async' would have resulted
+-- in an exception anyway.
+unbindAsync :: Ldap -> IO ()
+unbindAsync =
+  atomically . unbindAsyncSTM
+
+-- | Note that 'unbindAsyncSTM' does not return an 'Async',
+-- because LDAP server never responds to @UnbindRequest@s, hence
+-- a call to 'wait' on a hypothetical 'Async' would have resulted
+-- in an exception anyway.
+unbindAsyncSTM :: Ldap -> STM ()
+unbindAsyncSTM l =
+  void (sendRequest l die Type.UnbindRequest)
+ where
+  die = error "Ldap.Client: do not wait for the response to UnbindRequest"

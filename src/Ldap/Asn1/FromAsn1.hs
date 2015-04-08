@@ -1,10 +1,8 @@
 {-# LANGUAGE CPP #-}
+-- | This module contains convertions from ASN.1 to LDAP types.
 module Ldap.Asn1.FromAsn1
-  ( FromAsn1(..)
-  , Parser
-  , parseAsn1
-  , parse
-  , next
+  ( parseAsn1
+  , FromAsn1
   ) where
 
 #if __GLASGOW_HASKELL__ >= 710
@@ -25,6 +23,13 @@ import           Ldap.Asn1.Type
 {-# ANN module "HLint: ignore Avoid lambda" #-}
 
 
+-- | Convert a part of ASN.1 stream to a LDAP type returning the remainder of the stream.
+parseAsn1 :: FromAsn1 a => [ASN1] -> Maybe ([ASN1], a)
+parseAsn1 = parse fromAsn1
+
+-- | ASN.1 stream parsers.
+--
+-- When it's relevant, instances include the part of RFC describing the encoding.
 class FromAsn1 a where
   fromAsn1 :: Parser [ASN1] a
 
@@ -84,7 +89,9 @@ LDAPOID ::= OCTET STRING -- Constrained to \<numericoid\>
 instance FromAsn1 LdapOid where
   fromAsn1 = do
     Asn1.OctetString s <- next
-    return (LdapOid s)
+    case Text.decodeUtf8' s of
+      Right t -> return (LdapOid t)
+      Left  _ -> empty
 
 {- |
 @
@@ -335,9 +342,12 @@ instance FromAsn1 ProtocolServerOp where
     , do
       Asn1.Start (Asn1.Container Asn1.Application 24) <- next
       res <- fromAsn1
-      name <- optional $ do
+      utf8Name <- optional $ do
         Asn1.Other Asn1.Context 10 s <- next
         return s
+      name <- maybe (return Nothing) (\n -> case Text.decodeUtf8' n of
+        Left  _    -> empty
+        Right name -> return (Just name)) utf8Name
       value <- optional $ do
         Asn1.Other Asn1.Context 11 s <- next
         return s
@@ -405,9 +415,6 @@ instance MonadPlus (Parser s) where
   mzero = Parser (\_ -> mzero)
   Parser ma `mplus` Parser mb =
     Parser (\s -> ma s `mplus` mb s)
-
-parseAsn1 :: FromAsn1 a => [ASN1] -> Maybe ([ASN1], a)
-parseAsn1 = parse fromAsn1
 
 parse :: Parser s a -> s -> Maybe (s, a)
 parse = unParser

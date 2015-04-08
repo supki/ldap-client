@@ -1,5 +1,18 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
+-- | <https://tools.ietf.org/html/rfc4511#section-4.5 Search> operation.
+--
+-- This operation comes in four flavours:
+--
+--   * synchronous, exception throwing ('search')
+--
+--   * synchronous, returning 'Either' 'ResponseError' @()@ ('searchEither')
+--
+--   * asynchronous, 'IO' based ('searchAsync')
+--
+--   * asynchronous, 'STM' based ('searchAsyncSTM')
+--
+-- Of those, the first one ('search') is probably the most useful for the typical usecase.
 module Ldap.Client.Search
   ( search
   , searchEither
@@ -18,7 +31,6 @@ module Ldap.Client.Search
   ) where
 
 import           Control.Monad.STM (STM, atomically)
-import           Data.ByteString (ByteString)
 import           Data.Int (Int32)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -33,10 +45,13 @@ import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
+-- | Perform the Search operation synchronously. Raises 'ResponseError' on failures.
 search :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> IO [SearchEntry]
 search l base opts flt attributes =
   raise =<< searchEither l base opts flt attributes
 
+-- | Perform the Search operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 searchEither
   :: Ldap
   -> Dn
@@ -47,11 +62,23 @@ searchEither
 searchEither l base opts flt attributes =
   wait =<< searchAsync l base opts flt attributes
 
+-- | Perform the Search operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 searchAsync :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> IO (Async [SearchEntry])
 searchAsync l base opts flt attributes =
   atomically (searchAsyncSTM l base opts flt attributes)
 
-searchAsyncSTM :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> STM (Async [SearchEntry])
+-- | Perform the Search operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
+searchAsyncSTM
+  :: Ldap
+  -> Dn
+  -> Mod Search
+  -> Filter
+  -> [Attr]
+  -> STM (Async [SearchEntry])
 searchAsyncSTM l base opts flt attributes =
   let req = searchRequest base opts flt attributes in sendRequest l (searchResult req) req
 
@@ -167,12 +194,12 @@ data Filter =
   | And (NonEmpty Filter)
   | Or (NonEmpty Filter)
   | Present Attr
-  | Attr := ByteString
-  | Attr :>= ByteString
-  | Attr :<= ByteString
-  | Attr :~= ByteString
-  | Attr :=* (Maybe ByteString, [ByteString], Maybe ByteString)
-  | (Maybe Attr, Maybe Attr, Bool) ::= ByteString
+  | Attr := AttrValue
+  | Attr :>= AttrValue
+  | Attr :<= AttrValue
+  | Attr :~= AttrValue
+  | Attr :=* (Maybe AttrValue, [AttrValue], Maybe AttrValue)
+  | (Maybe Attr, Maybe Attr, Bool) ::= AttrValue
 
 data SearchEntry = SearchEntry Dn (AttrList [])
     deriving (Show, Eq)

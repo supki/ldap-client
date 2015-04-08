@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.ModifySpec (spec) where
 
-import           Data.ByteString (ByteString)
 import           Data.Monoid ((<>))
 import           Test.Hspec
 import qualified Ldap.Asn1.Type as Ldap.Type
@@ -87,5 +86,5 @@ spec = do
                       ]
       res `shouldBe` Right ()
 
-lookupAttr :: Attr -> SearchEntry -> Maybe [ByteString]
+lookupAttr :: Attr -> SearchEntry -> Maybe [AttrValue]
 lookupAttr a (SearchEntry _ as) = lookup a as

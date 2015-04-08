@@ -1,3 +1,16 @@
+-- | <https://tools.ietf.org/html/rfc4511#section-4.7 Add> operation.
+--
+-- This operation comes in four flavours:
+--
+--   * synchronous, exception throwing ('add')
+--
+--   * synchronous, returning 'Either' 'ResponseError' @()@ ('addEither')
+--
+--   * asynchronous, 'IO' based ('addAsync')
+--
+--   * asynchronous, 'STM' based ('addAsyncSTM')
+--
+-- Of those, the first one ('add') is probably the most useful for the typical usecase.
 module Ldap.Client.Add
   ( add
   , addEither
@@ -12,18 +25,27 @@ import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
+-- | Perform the Add operation synchronously. Raises 'ResponseError' on failures.
 add :: Ldap -> Dn -> AttrList NonEmpty -> IO ()
 add l dn as =
   raise =<< addEither l dn as
 
+-- | Perform the Add operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 addEither :: Ldap -> Dn -> AttrList NonEmpty -> IO (Either ResponseError ())
 addEither l dn as =
   wait =<< addAsync l dn as
 
+-- | Perform the Add operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 addAsync :: Ldap -> Dn -> AttrList NonEmpty -> IO (Async ())
 addAsync l dn as =
   atomically (addAsyncSTM l dn as)
 
+-- | Perform the Add operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
 addAsyncSTM :: Ldap -> Dn -> AttrList NonEmpty -> STM (Async ())
 addAsyncSTM l dn as =
   let req = addRequest dn as in sendRequest l (addResult req) req

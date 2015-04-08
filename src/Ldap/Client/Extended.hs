@@ -1,4 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- | <https://tools.ietf.org/html/rfc4511#section-4.12 Extended> operation.
+--
+-- This operation comes in four flavours:
+--
+--   * synchronous, exception throwing ('extended')
+--
+--   * synchronous, returning 'Either' 'ResponseError' @()@ ('extendedEither')
+--
+--   * asynchronous, 'IO' based ('extendedAsync')
+--
+--   * asynchronous, 'STM' based ('extendedAsyncSTM')
+--
+-- Of those, the first one ('extended') is probably the most useful for the typical usecase.
 module Ldap.Client.Extended
   ( extended
   , extendedEither
@@ -19,18 +32,27 @@ import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
+-- | Perform the Extended operation synchronously. Raises 'ResponseError' on failures.
 extended :: Ldap -> Oid -> Maybe ByteString -> IO ()
 extended l oid mv =
   raise =<< extendedEither l oid mv
 
+-- | Perform the Extended operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 extendedEither :: Ldap -> Oid -> Maybe ByteString -> IO (Either ResponseError ())
 extendedEither l oid mv =
   wait =<< extendedAsync l oid mv
 
+-- | Perform the Extended operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 extendedAsync :: Ldap -> Oid -> Maybe ByteString -> IO (Async ())
 extendedAsync l oid mv =
   atomically (extendedAsyncSTM l oid mv)
 
+-- | Perform the Extended operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
 extendedAsyncSTM :: Ldap -> Oid -> Maybe ByteString -> STM (Async ())
 extendedAsyncSTM l oid mv =
   let req = extendedRequest oid mv in sendRequest l (extendedResult req) req

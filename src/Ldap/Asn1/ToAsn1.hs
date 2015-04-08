@@ -1,3 +1,9 @@
+-- | This module contains convertions from LDAP types to ASN.1.
+--
+-- Various hacks are employed because "asn1-encoding" only encodes to DER, but
+-- LDAP demands BER-encoding.  So, when a definition looks suspiciously different
+-- from the spec in the comment, that's why.  I hope all that will be fixed
+-- eventually.
 module Ldap.Asn1.ToAsn1
   ( ToAsn1(toAsn1)
   ) where
@@ -15,6 +21,9 @@ import           Prelude (Integer, (.), fromIntegral)
 import           Ldap.Asn1.Type
 
 
+-- | Convert a LDAP type to ASN.1.
+--
+-- When it's relevant, instances include the part of RFC describing the encoding.
 class ToAsn1 a where
   toAsn1 :: a -> Endo [ASN1]
 
@@ -62,7 +71,7 @@ LDAPOID ::= OCTET STRING -- Constrained to \<numericoid\>
 @
 -}
 instance ToAsn1 LdapOid where
-  toAsn1 (LdapOid s) = single (Asn1.OctetString s)
+  toAsn1 (LdapOid s) = single (Asn1.OctetString (Text.encodeUtf8 s))
 
 {- |
 @
@@ -292,7 +301,7 @@ instance ToAsn1 ProtocolClientOp where
     application 14 (toAsn1 dn <> sequence (toAsn1 av))
   toAsn1 (ExtendedRequest (LdapOid oid) mv) =
     application 23 (fold
-     [ other Asn1.Context 0 oid
+     [ other Asn1.Context 0 (Text.encodeUtf8 oid)
      , maybe mempty (other Asn1.Context 1) mv
      ])
 

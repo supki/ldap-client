@@ -1,3 +1,19 @@
+-- | <https://tools.ietf.org/html/rfc4511#section-4.6 Modify> and
+-- <https://tools.ietf.org/html/rfc4511#section-4.9 Modify DN> operations.
+--
+-- These operations come in four flavours:
+--
+--   * synchronous, exception throwing ('modify' / 'modifyDn')
+--
+--   * synchronous, returning 'Either' 'ResponseError' @()@
+--     ('modifyEither' / 'modifyDnEither')
+--
+--   * asynchronous, 'IO' based ('modifyAsync' / 'modifyDnAsync')
+--
+--   * asynchronous, 'STM' based ('modifyAsyncSTM' / 'modifyDnAsyncSTM')
+--
+-- Of those, the first one ('modify' / 'modifyDn') is probably the most
+-- useful for the typical usecase.
 module Ldap.Client.Modify
   ( Operation(..)
   , modify
@@ -11,31 +27,40 @@ module Ldap.Client.Modify
   ) where
 
 import           Control.Monad.STM (STM, atomically)
-import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
 
+-- | Type of modification being performed.
 data Operation =
-    Delete Attr [ByteString]
-  | Add Attr [ByteString]
-  | Replace Attr [ByteString]
+    Delete Attr [AttrValue] -- ^ Delete values from the attribute. Deletes the attribute if the list is empty or all current values are listed.
+  | Add Attr [AttrValue] -- ^ Add values to the attribute, creating it if necessary.
+  | Replace Attr [AttrValue] -- ^ Replace all existing values of the attribute with the new list. Deletes the attribute if the list is empty.
     deriving (Show, Eq)
 
+-- | Perform the Modify operation synchronously. Raises 'ResponseError' on failures.
 modify :: Ldap -> Dn -> [Operation] -> IO ()
 modify l dn as =
   raise =<< modifyEither l dn as
 
+-- | Perform the Modify operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 modifyEither :: Ldap -> Dn -> [Operation] -> IO (Either ResponseError ())
 modifyEither l dn as =
   wait =<< modifyAsync l dn as
 
+-- | Perform the Modify operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 modifyAsync :: Ldap -> Dn -> [Operation] -> IO (Async ())
 modifyAsync l dn as =
   atomically (modifyAsyncSTM l dn as)
 
+-- | Perform the Modify operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
 modifyAsyncSTM :: Ldap -> Dn -> [Operation] -> STM (Async ())
 modifyAsyncSTM l dn xs =
   let req = modifyRequest dn xs in sendRequest l (modifyResult req) req
@@ -61,18 +86,27 @@ modifyResult req (Type.ModifyResponse (Type.LdapResult code (Type.LdapDn (Type.L
 modifyResult req res = Left (ResponseInvalid req res)
 
 
+-- | Perform the Modify DN operation synchronously. Raises 'ResponseError' on failures.
 modifyDn :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO ()
 modifyDn l dn rdn del new =
   raise =<< modifyDnEither l dn rdn del new
 
+-- | Perform the Modify DN operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
 modifyDnEither :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO (Either ResponseError ())
 modifyDnEither l dn rdn del new =
   wait =<< modifyDnAsync l dn rdn del new
 
+-- | Perform the Modify DN operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
 modifyDnAsync :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO (Async ())
 modifyDnAsync l dn rdn del new =
   atomically (modifyDnAsyncSTM l dn rdn del new)
 
+-- | Perform the Modify DN operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
 modifyDnAsyncSTM :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> STM (Async ())
 modifyDnAsyncSTM l dn rdn del new =
   let req = modifyDnRequest dn rdn del new in sendRequest l (modifyDnResult req) req
