@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+
+    <title>ldap-client: Pure Haskell LDAP Client Library</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/bootstrap-custom.css" rel="stylesheet">
+
+    <!-- Open Sans -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet">
+
+    <!-- Pandoc -->
+    <style type="text/css">code{white-space: pre;}</style>
+    <style type="text/css">
+      table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+        margin: 0; padding: 0; vertical-align: baseline; border: none; }
+      table.sourceCode { width: 100%; line-height: 100%; }
+      td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+      td.sourceCode { padding-left: 5px; }
+      code > span.kw { color: #007020; font-weight: bold; }
+      code > span.dt { color: #902000; }
+      code > span.dv { color: #40a070; }
+      code > span.bn { color: #40a070; }
+      code > span.fl { color: #40a070; }
+      code > span.ch { color: #4070a0; }
+      code > span.st { color: #4070a0; }
+      code > span.co { color: #60a0b0; font-style: italic; }
+      code > span.ot { color: #007020; }
+      code > span.al { color: #ff0000; font-weight: bold; }
+      code > span.fu { color: #06287e; }
+      code > span.er { color: #ff0000; font-weight: bold; }
+    </style>
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="assets/js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="https://hackage.haskell.org/package/ldap-client">On Hackage</a></li>
+            <li><a href="https://github.com/supki/ldap-client">On GitHub</a></li>
+            <li><a href="https://github.com/supki/ldap-client/tree/master/example">Examples</a></li>
+            <li><a href="https://github.com/supki/ldap-client/issues">Issues</a></li>
+            <li><a href="https://supki.github.io/ldap-client">API Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="jumbotron">
+      <div class="container">
+        <h1>ldap-client</h1>
+        <p>Pure Haskell LDAP client library</p>
+        <a href="https://travis-ci.org/supki/ldap-client"><img src="https://travis-ci.org/supki/ldap-client.svg?branch=master"></img></a>
+        <a href="https://hackage.haskell.org/package/ldap-client"><img src="https://budueba.com/hackage/ldap-haskell"></img></a>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-7">
+          <h2>Installation</h2>
+          <p>
+            It should be possible to install <code>ldap-client</code> from Hackage:
+          </p>
+
+          <pre>$ cabal install ldap-client</pre>
+
+          <p>
+            or git:
+          </p>
+
+          <pre>
+$ git clone https://github.com/supki/ldap-client
+$ cabal install ldap-haskell/ldap-haskell.cabal</pre>
+
+          <p>
+            if you use GHC 7.6.1 or a newer version.
+          </p>
+
+          <h2>Example</h2>
+
+          <p>
+            To get a feeling of <code>ldap-client</code> we will try and
+            log in into LDAP and change our password.
+          </p>
+
+          <p>
+            Before all that, though, here's the obligatory module header
+            describing the language extensions and imports used later,
+            so you can follow along:
+          </p>
+
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Example</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Ldap.Client</span> <span class="kw">as</span> <span class="dt">Ldap</span></code></pre>
+
+          <h3>LDAP Authentication</h3>
+
+          <p>
+            The typical LDAP authentication routine has three steps.
+            <ol>
+              <li>Try and bind with the manager's DN and password. Manager here means
+                  any account that is able to look up information in the Directory.
+              <li>Find the DN of the user using manager's powers.
+              <li>Try and bind with the user's newly found DN and their password.
+            </ol>
+          </p>
+
+          <p>
+            We will encapsulate the first two steps in a separate function as it is a
+            fairly self-contained operation:
+          </p>
+
+<!-- start findUser -->
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">findUser ::</span> <span class="dt">Ldap</span> <span class="ot">-&gt;</span> (<span class="dt">Dn</span>, <span class="dt">Password</span>) <span class="ot">-&gt;</span> <span class="dt">AttrValue</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Dn</span>)
+findUser l (managerDn, managerPassword) userName <span class="fu">=</span> <span class="kw">do</span>
+  Ldap.bind l managerDn managerPassword
+  users <span class="ot">&lt;-</span> Ldap.search l (<span class="dt">Dn</span> <span class="st">&quot;dc=com,dc=example&quot;</span>)
+                         (typesOnly <span class="dt">True</span>)
+                         (<span class="dt">Attr</span> <span class="st">&quot;uid&quot;</span> <span class="fu">:=</span> userName)
+                         []
+  <span class="kw">case</span> users <span class="kw">of</span>
+    <span class="dt">SearchEntry</span> userDn _ <span class="fu">:</span> _ <span class="ot">-&gt;</span> return (<span class="dt">Just</span> userDn)
+    _ <span class="ot">-&gt;</span> return <span class="dt">Nothing</span></code></pre>
+<!-- end findUser -->
+
+          <p>
+            The third step uses the <code>Dn</code>; we will pass it through since
+            it will be useful to <code>changePassword</code>.
+          </p>
+
+<!-- start login -->
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">login ::</span> <span class="dt">Ldap</span> <span class="ot">-&gt;</span> (<span class="dt">Dn</span>, <span class="dt">Password</span>) <span class="ot">-&gt;</span> (<span class="dt">AttrValue</span>, <span class="dt">Password</span>) <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Dn</span>
+login l (managerDn, managerPassword) (userName, userPassword) <span class="fu">=</span> <span class="kw">do</span>
+  maybeUserDn <span class="ot">&lt;-</span> findUser l (managerDn, managerPassword) userName
+  <span class="kw">case</span> maybeUserDn <span class="kw">of</span>
+    <span class="dt">Nothing</span>     <span class="ot">-&gt;</span> error <span class="st">&quot;User not found!&quot;</span>
+    <span class="dt">Just</span> userDn <span class="ot">-&gt;</span> <span class="kw">do</span> Ldap.bind l userDn userPassword
+                      return userDn</code></pre>
+<!-- end login -->
+
+          <p>
+            In the real code you will, obviously, use something better than <code>error</code>.
+          </p>
+
+          <h3>Changing user's password</h3>
+
+          <p>
+            Because we have been already bound as <code>userName</code>, we can simply modify
+            the relevant attribute in the Directory to change the password.
+          </p>
+
+<!-- start changePassword -->
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">changePassword ::</span> <span class="dt">Ldap</span> <span class="ot">-&gt;</span> <span class="dt">Dn</span> <span class="ot">-&gt;</span> <span class="dt">AttrValue</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+changePassword l userDn userNewPassword <span class="fu">=</span>
+  Ldap.modify l userDn [<span class="dt">Replace</span> (<span class="dt">Attr</span> <span class="st">&quot;userPassword&quot;</span>) [userNewPassword]]</code></pre>
+<!-- end changePassword -->
+
+          <h3>Finishing up</h3>
+
+          <p>
+            The only remaining task is to wrap <code>login</code> and
+            <code>changePassword</code> in <code>Ldap.with</code>.
+          </p>
+
+<!-- start loginAndChangePassword -->
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell">loginAndChangePassword
+<span class="ot">  ::</span> (<span class="dt">Dn</span>, <span class="dt">Password</span>)
+  <span class="ot">-&gt;</span> (<span class="dt">AttrValue</span>, <span class="dt">Password</span>, <span class="dt">AttrValue</span>)
+  <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">LdapError</span> ())
+loginAndChangePassword (managerDn, managerPassword)
+                       (userName, userPassword, userNewPassword) <span class="fu">=</span>
+  Ldap.with (<span class="dt">Secure</span> <span class="st">&quot;ldap.example.com&quot;</span>) <span class="dv">636</span> <span class="fu">$</span> \l <span class="ot">-&gt;</span> <span class="kw">do</span>
+    dn <span class="ot">&lt;-</span> login l (managerDn, managerPassword) (userName, userPassword)
+    changePassword l dn userNewPassword</code></pre>
+<!-- end loginAndChangePassword -->
+        </div>
+      </div>
+
+      <hr>
+
+      <footer>
+        <p>&copy; Traceback (most recent call last): 2015</p>
+      </footer>
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="dist/js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="assets/js/ie10-viewport-bug-workaround.js"></script>
+  </body>
+</html>
