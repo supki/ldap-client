@@ -112,7 +112,7 @@ $ cabal install ldap-haskell/ldap-haskell.cabal</pre>
           <p>
             Before all that, though, here's the obligatory module header
             describing the language extensions and imports used later,
-            so you can follow along:
+            so that you can follow along:
           </p>
 
 <pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
@@ -123,7 +123,7 @@ $ cabal install ldap-haskell/ldap-haskell.cabal</pre>
           <h3>LDAP Authentication</h3>
 
           <p>
-            The typical LDAP authentication routine has three steps.
+            The typical LDAP authentication routine has three steps:
             <ol>
               <li>Try and bind with the manager's DN and password. Manager here means
                   any account that is able to look up information in the Directory.
@@ -133,7 +133,7 @@ $ cabal install ldap-haskell/ldap-haskell.cabal</pre>
           </p>
 
           <p>
-            We will encapsulate the first two steps in a separate function as it is a
+            We will encapsulate the first two steps in a separate function as it's a
             fairly self-contained operation:
           </p>
 
@@ -151,8 +151,8 @@ findUser l (managerDn, managerPassword) userName <span class="fu">=</span> <span
 <!-- end findUser -->
 
           <p>
-            The third step uses the <code>Dn</code>; we will pass it through since
-            it will be useful to <code>changePassword</code>.
+            The third step uses the <code>Dn</code> we've got from <code>findUser</code>; we will
+            pass it through since it will be useful to <code>changePassword</code>.
           </p>
 
 <!-- start login -->
@@ -164,10 +164,6 @@ login l (managerDn, managerPassword) (userName, userPassword) <span class="fu">=
     <span class="dt">Just</span> userDn <span class="ot">-&gt;</span> <span class="kw">do</span> Ldap.bind l userDn userPassword
                       return userDn</code></pre>
 <!-- end login -->
-
-          <p>
-            In the real code you will, obviously, use something better than <code>error</code>.
-          </p>
 
           <h3>Changing user's password</h3>
 
