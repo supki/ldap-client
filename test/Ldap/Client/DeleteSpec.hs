@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.DeleteSpec (spec) where
 
-import           Data.Monoid ((<>))
 import           Test.Hspec
 
-import           Ldap.Client (Dn(..), Filter(..), Scope(..), Attr(..))
+import           Ldap.Client (Dn(..), Filter(..), Attr(..))
 import qualified Ldap.Client as Ldap
 import qualified Ldap.Asn1.Type as Ldap.Type
 
@@ -13,10 +12,7 @@ import           SpecHelper (locally, dns, pikachu, oddish)
 
 spec :: Spec
 spec = do
-  let go l f = Ldap.search l (Dn "o=localhost")
-                             (Ldap.scope WholeSubtree <> Ldap.typesOnly True)
-                             f
-                             []
+  let go l f = Ldap.search l (Dn "o=localhost") (Ldap.typesOnly True) f []
 
   it "deletes an entry" $ do
     res <- locally $ \l -> do

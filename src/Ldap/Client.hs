@@ -2,6 +2,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
+-- | Pure Haskell LDAP client library.
 module Ldap.Client
   ( Host(..)
   , Ldap
@@ -11,6 +12,7 @@ module Ldap.Client
   , Async
   , with
     -- * Bind
+  , Password(..)
   , bind
     -- * Search
   , search
@@ -18,11 +20,12 @@ module Ldap.Client
     -- ** Search modifiers
   , Search
   , Mod
-  , scope
   , Type.Scope(..)
+  , scope
   , size
   , time
   , typesOnly
+  , Type.DerefAliases(..)
   , derefAliases
   , Filter(..)
     -- * Modify
@@ -33,21 +36,20 @@ module Ldap.Client
     -- * Delete
   , delete
     -- * ModifyDn
+  , RelativeDn(..)
   , modifyDn
     -- * Compare
   , compare
     -- * Extended
+  , Oid(..)
   , extended
     -- * Waiting for completion
   , wait
     -- * Miscellanous
   , Dn(..)
-  , RelativeDn(..)
-  , Oid(..)
-  , Password(..)
-  , AttrList
   , Attr(..)
   , AttrValue
+  , AttrList
     -- * Re-exports
   , NonEmpty
   , PortNumber
@@ -74,6 +76,9 @@ import qualified Data.Map.Strict as Map
 import           Data.Monoid (Endo(appEndo))
 import           Data.String (fromString)
 import           Data.Text (Text)
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Traversable (traverse)
+#endif
 import           Data.Typeable (Typeable)
 import           Network.Connection (Connection)
 import qualified Network.Connection as Conn
@@ -84,7 +89,7 @@ import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
-import           Ldap.Client.Bind (bind)
+import           Ldap.Client.Bind (Password(..), bind)
 import           Ldap.Client.Search
   ( search
   , Search
@@ -97,11 +102,11 @@ import           Ldap.Client.Search
   , Filter(..)
   , SearchEntry(..)
   )
-import           Ldap.Client.Modify (Operation(..), modify, modifyDn)
+import           Ldap.Client.Modify (Operation(..), modify, RelativeDn(..), modifyDn)
 import           Ldap.Client.Add (add)
 import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
-import           Ldap.Client.Extended (extended)
+import           Ldap.Client.Extended (Oid(..), extended)
 
 {-# ANN module "HLint: ignore Use first" #-}
 
@@ -110,11 +115,12 @@ newLdap :: IO Ldap
 newLdap = Ldap
   <$> newTQueueIO
 
+-- | Various failures that can happen when working with LDAP.
 data LdapError =
-    IOError IOError
-  | ParseError Asn1.ASN1Error
-  | ResponseError ResponseError
-  | DisconnectError Disconnect
+    IOError IOError             -- ^ Network failure.
+  | ParseError Asn1.ASN1Error   -- ^ Invalid ASN.1 data received from the server.
+  | ResponseError ResponseError -- ^ An LDAP operation failed.
+  | DisconnectError Disconnect  -- ^ Notice of Disconnection has been received.
     deriving (Show, Eq)
 
 newtype WrappedIOError = WrappedIOError IOError
@@ -128,6 +134,8 @@ data Disconnect = Disconnect Type.ResultCode Dn Text
 instance Exception Disconnect
 
 -- | The entrypoint into LDAP.
+--
+-- It catches all LDAP-related exceptions.
 with :: Host -> PortNumber -> (Ldap -> IO a) -> IO (Either LdapError a)
 with host port f = do
   context <- Conn.initConnectionContext
@@ -135,11 +143,13 @@ with host port f = do
     bracket newLdap unbindAsync (\l -> do
       inq  <- newTQueueIO
       outq <- newTQueueIO
-      Async.withAsync (input inq conn) $ \i ->
-        Async.withAsync (output outq conn) $ \o ->
-          Async.withAsync (dispatch l inq outq) $ \d ->
-            Async.withAsync (f l) $ \u ->
-              fmap (Right . snd) (Async.waitAnyCancel [i, o, d, u])))
+      as   <- traverse Async.async
+        [ input inq conn
+        , output outq conn
+        , dispatch l inq outq
+        , f l
+        ]
+      fmap (Right . snd) (Async.waitAnyCancel as)))
  `catches`
   [ Handler (\(WrappedIOError e) -> return (Left (IOError e)))
   , Handler (return . Left . ParseError)

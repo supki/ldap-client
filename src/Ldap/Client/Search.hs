@@ -25,6 +25,7 @@ module Ldap.Client.Search
   , size
   , time
   , typesOnly
+  , Type.DerefAliases(..)
   , derefAliases
   , Filter(..)
   , SearchEntry(..)
@@ -148,38 +149,48 @@ searchResult req (Type.SearchResultDone (Type.LdapResult code (Type.LdapDn (Type
   j (Type.AttributeValue x) = x
 searchResult req res = Left (ResponseInvalid req res)
 
+-- | Search options. Use 'Mod' to change some of those.
 data Search = Search
-  { _scope        :: Type.Scope
-  , _derefAliases :: Type.DerefAliases
-  , _size         :: Int32
-  , _time         :: Int32
-  , _typesOnly    :: Bool
+  { _scope        :: !Type.Scope
+  , _derefAliases :: !Type.DerefAliases
+  , _size         :: !Int32
+  , _time         :: !Int32
+  , _typesOnly    :: !Bool
   } deriving (Show, Eq)
 
 defaultSearch :: Search
 defaultSearch = Search
-  { _scope        = Type.BaseObject
+  { _scope        = Type.WholeSubtree
   , _size         = 0
   , _time         = 0
   , _typesOnly    = False
   , _derefAliases = Type.NeverDerefAliases
   }
 
+-- | Scope of the search (default: 'WholeSubtree').
 scope :: Type.Scope -> Mod Search
 scope x = Mod (\y -> y { _scope = x })
 
+-- | Maximum number of entries to be returned as a result of the Search.
+-- No limit if the value is @0@ (default: @0@).
 size :: Int32 -> Mod Search
 size x = Mod (\y -> y { _size = x })
 
+-- | Maximum time (in seconds) allowed for the Search. No limit if the value
+-- is @0@ (default: @0@).
 time :: Int32 -> Mod Search
 time x = Mod (\y -> y { _time = x })
 
+-- | Whether Search results are to contain just attribute descriptions, or
+-- both attribute descriptions and values (default: 'False').
 typesOnly :: Bool -> Mod Search
 typesOnly x = Mod (\y -> y { _typesOnly = x })
 
+-- | Alias dereference policy (default: 'NeverDerefAliases').
 derefAliases :: Type.DerefAliases -> Mod Search
 derefAliases x = Mod (\y -> y { _derefAliases = x })
 
+-- | Search modifier. Combine using 'Semigroup' and/or 'Monoid' instance.
 newtype Mod a = Mod (a -> a)
 
 instance Semigroup (Mod a) where
@@ -189,17 +200,21 @@ instance Monoid (Mod a) where
   mempty = Mod id
   mappend = (<>)
 
+-- | Conditions that must be fulfilled in order for the Search to match a given entry.
 data Filter =
-    Not Filter
-  | And (NonEmpty Filter)
-  | Or (NonEmpty Filter)
-  | Present Attr
-  | Attr := AttrValue
-  | Attr :>= AttrValue
-  | Attr :<= AttrValue
-  | Attr :~= AttrValue
-  | Attr :=* (Maybe AttrValue, [AttrValue], Maybe AttrValue)
+    Not !Filter             -- ^ Filter does not match the entry
+  | And !(NonEmpty Filter)  -- ^ All filters match the entry
+  | Or !(NonEmpty Filter)   -- ^ Any filter matches the entry
+  | Present !Attr           -- ^ Attribute is present in the entry
+  | !Attr := !AttrValue     -- ^ Attribute's value is equal to the assertion
+  | !Attr :>= !AttrValue    -- ^ Attribute's value is equal to or greater than the assertion
+  | !Attr :<= !AttrValue    -- ^ Attribute's value is equal to or less than the assertion
+  | !Attr :~= !AttrValue    -- ^ Attribute's value approximately matches the assertion
+  | !Attr :=* !(Maybe AttrValue, [AttrValue], Maybe AttrValue)
+                            -- ^ Glob match
   | (Maybe Attr, Maybe Attr, Bool) ::= AttrValue
+                            -- ^ Extensible match
 
-data SearchEntry = SearchEntry Dn (AttrList [])
+-- | Entry found during the Search.
+data SearchEntry = SearchEntry !Dn !(AttrList [])
     deriving (Show, Eq)

@@ -12,18 +12,24 @@
 --
 -- Of those, the first one ('bind') is probably the most useful for the typical usecase.
 module Ldap.Client.Bind
-  ( bind
+  ( Password(..)
+  , bind
   , bindEither
   , bindAsync
   , bindAsyncSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)
+import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
+
+-- | User's password.
+newtype Password = Password ByteString
+    deriving (Show, Eq)
 
 -- | Perform the Bind operation synchronously. Raises 'ResponseError' on failures.
 bind :: Ldap -> Dn -> Password -> IO ()

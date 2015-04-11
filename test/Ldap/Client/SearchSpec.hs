@@ -2,7 +2,6 @@
 module Ldap.Client.SearchSpec (spec) where
 
 import qualified Data.List.NonEmpty as NonEmpty
-import           Data.Monoid ((<>))
 import           Test.Hspec
 import           Ldap.Client as Ldap
 import qualified Ldap.Asn1.Type as Ldap.Type
@@ -28,10 +27,7 @@ import           SpecHelper
 
 spec :: Spec
 spec = do
-  let go l f = Ldap.search l (Dn "o=localhost")
-                             (Ldap.scope WholeSubtree <> Ldap.typesOnly True)
-                             f
-                             []
+  let go l f = Ldap.search l (Dn "o=localhost") (Ldap.typesOnly True) f []
 
   it "cannot search as ‘pikachu’" $ do
     res <- locally $ \l -> do

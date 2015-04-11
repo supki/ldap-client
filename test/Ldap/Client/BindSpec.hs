@@ -1,6 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.BindSpec (spec) where
 
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Monoid (mempty)
+#endif
 import           Test.Hspec
 import qualified Ldap.Asn1.Type as Ldap.Type
 import           Ldap.Client as Ldap
@@ -32,9 +36,6 @@ spec = do
     res <- locally $ \l -> do
       Ldap.bind l (Dn "cn=admin") (Password "secret")
       [Ldap.SearchEntry udn _]
-        <- Ldap.search l (Dn "o=localhost")
-                         (scope WholeSubtree)
-                         (Attr "cn" := "pikachu")
-                         []
+        <- Ldap.search l (Dn "o=localhost") mempty (Attr "cn" := "pikachu") []
       Ldap.bind l udn (Password "i-choose-you")
     res `shouldBe` Right ()

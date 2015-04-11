@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | <https://tools.ietf.org/html/rfc4511#section-4.12 Extended> operation.
 --
 -- This operation comes in four flavours:
@@ -13,10 +12,13 @@
 --
 -- Of those, the first one ('extended') is probably the most useful for the typical usecase.
 module Ldap.Client.Extended
-  ( extended
+  ( -- * Extended Operation
+    Oid(..)
+  , extended
   , extendedEither
   , extendedAsync
   , extendedAsyncSTM
+    -- ** StartTLS Operation
   , startTls
   , startTlsEither
   , startTlsAsync
@@ -27,10 +29,16 @@ import           Control.Monad ((<=<))
 import           Control.Monad.STM (STM, atomically)
 import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty((:|)))
+import           Data.String (fromString)
+import           Data.Text (Text)
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
 
+
+-- | Globally unique LDAP object identifier.
+newtype Oid = Oid Text
+    deriving (Show, Eq)
 
 -- | Perform the Extended operation synchronously. Raises 'ResponseError' on failures.
 extended :: Ldap -> Oid -> Maybe ByteString -> IO ()
@@ -62,25 +70,31 @@ extendedRequest (Oid oid) =
   Type.ExtendedRequest (Type.LdapOid oid)
 
 extendedResult :: Request -> Response -> Either ResponseError ()
-extendedResult req (Type.ExtendedResponse (Type.LdapResult code (Type.LdapDn (Type.LdapString dn))
-                                                                (Type.LdapString msg) _) _ _ :| [])
+extendedResult req (Type.ExtendedResponse
+                     (Type.LdapResult code (Type.LdapDn (Type.LdapString dn))
+                                           (Type.LdapString msg) _) _ _ :| [])
   | Type.Success <- code = Right ()
   | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
 extendedResult req res = Left (ResponseInvalid req res)
 
 
+-- | An example of @Extended Operation@, cf. 'extended'.
 startTls :: Ldap -> IO ()
 startTls =
   raise <=< startTlsEither
 
+-- | An example of @Extended Operation@, cf. 'extendedEither'.
 startTlsEither :: Ldap -> IO (Either ResponseError ())
 startTlsEither =
   wait <=< startTlsAsync
 
+-- | An example of @Extended Operation@, cf. 'extendedAsync'.
 startTlsAsync :: Ldap -> IO (Async ())
 startTlsAsync =
   atomically . startTlsAsyncSTM
 
+-- | An example of @Extended Operation@, cf. 'extendedAsyncSTM'.
 startTlsAsyncSTM :: Ldap -> STM (Async ())
 startTlsAsyncSTM l =
-  extendedAsyncSTM l (Oid "1.3.6.1.4.1.1466.20037") Nothing
+  extendedAsyncSTM l (Oid (fromString "1.3.6.1.4.1.1466.20037"))
+                     Nothing

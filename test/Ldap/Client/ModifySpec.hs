@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.ModifySpec (spec) where
 
-import           Data.Monoid ((<>))
 import           Test.Hspec
 import qualified Ldap.Asn1.Type as Ldap.Type
 import           Ldap.Client as Ldap
@@ -11,10 +10,7 @@ import           SpecHelper (locally, charizard, pikachu, raichu)
 
 spec :: Spec
 spec = do
-  let go l f = Ldap.search l (Dn "o=localhost")
-                             (Ldap.scope WholeSubtree <> Ldap.typesOnly True)
-                             f
-                             []
+  let go l f = Ldap.search l (Dn "o=localhost") (Ldap.typesOnly True) f []
 
   context "delete" $ do
     it "can land ‘charizard’" $ do

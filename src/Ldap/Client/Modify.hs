@@ -20,6 +20,7 @@ module Ldap.Client.Modify
   , modifyEither
   , modifyAsync
   , modifyAsyncSTM
+  , RelativeDn(..)
   , modifyDn
   , modifyDnEither
   , modifyDnAsync
@@ -28,6 +29,7 @@ module Ldap.Client.Modify
 
 import           Control.Monad.STM (STM, atomically)
 import           Data.List.NonEmpty (NonEmpty((:|)))
+import           Data.Text (Text)
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
@@ -85,6 +87,10 @@ modifyResult req (Type.ModifyResponse (Type.LdapResult code (Type.LdapDn (Type.L
   | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
 modifyResult req res = Left (ResponseInvalid req res)
 
+
+-- | A component of 'Dn'.
+newtype RelativeDn = RelativeDn Text
+    deriving (Show, Eq)
 
 -- | Perform the Modify DN operation synchronously. Raises 'ResponseError' on failures.
 modifyDn :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO ()

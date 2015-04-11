@@ -60,7 +60,7 @@ login conf =
     fix $ \loop -> do
       uid <- prompt "Username: "
       us  <- Ldap.search l (base conf)
-                           (scope WholeSubtree <> typesOnly True)
+                           (typesOnly True)
                            (And [ Attr "objectClass" := "Person"
                                 , Attr "uid" := Text.encodeUtf8 uid
                                 ])

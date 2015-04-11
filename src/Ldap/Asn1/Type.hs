@@ -47,45 +47,51 @@ data ProtocolServerOp =
   | IntermediateResponse !(Maybe LdapOid) !(Maybe ByteString)
     deriving (Show, Eq)
 
+-- | Not really a choice until SASL is supported.
 newtype AuthenticationChoice = Simple ByteString
     deriving (Show, Eq)
 
+-- | Scope of the search to be performed.
 data Scope =
-    BaseObject
-  | SingleLevel
-  | WholeSubtree
+    BaseObject   -- ^ Constrained to the entry named by baseObject.
+  | SingleLevel  -- ^ Constrained to the immediate subordinates of the entry named by baseObject.
+  | WholeSubtree -- ^ Constrained to the entry named by baseObject and to all its subordinates.
     deriving (Show, Eq)
 
+-- | An indicator as to whether or not alias entries (as defined in
+-- [RFC4512]) are to be dereferenced during stages of the Search
+-- operation.
 data DerefAliases =
-    NeverDerefAliases
-  | DerefInSearching
-  | DerefFindingBaseObject
-  | DerefAlways
+    NeverDerefAliases      -- ^ Do not dereference aliases in searching or in locating the base object of the Search.
+  | DerefInSearching       -- ^ While searching subordinates of the base object, dereference any alias within the search scope.
+  | DerefFindingBaseObject -- ^ Dereference aliases in locating the base object of the Search.
+  | DerefAlways            -- ^ Dereference aliases both in searching and in locating the base object of the Search.
     deriving (Show, Eq)
 
+-- | Conditions that must be fulfilled in order for the Search to match a given entry.
 data Filter =
-    And (NonEmpty Filter)
-  | Or (NonEmpty Filter)
-  | Not Filter
-  | EqualityMatch AttributeValueAssertion
-  | Substrings SubstringFilter
-  | GreaterOrEqual AttributeValueAssertion
-  | LessOrEqual AttributeValueAssertion
-  | Present AttributeDescription
-  | ApproxMatch AttributeValueAssertion
+    And !(NonEmpty Filter)                 -- ^ All filters evaluate to @TRUE@
+  | Or !(NonEmpty Filter)                  -- ^ Any filter evaluates to @TRUE@
+  | Not Filter                             -- ^ Filter evaluates to @FALSE@
+  | EqualityMatch AttributeValueAssertion  -- ^ @EQUALITY@ rule returns @TRUE@
+  | Substrings SubstringFilter             -- ^ @SUBSTR@ rule returns @TRUE@
+  | GreaterOrEqual AttributeValueAssertion -- ^ @ORDERING@ rule returns @FALSE@
+  | LessOrEqual AttributeValueAssertion    -- ^ @ORDERING@ or @EQUALITY@ rule returns @TRUE@
+  | Present AttributeDescription           -- ^ Attribute is present in the entry
+  | ApproxMatch AttributeValueAssertion    -- ^ Same as 'EqualityMatch' for most servers
   | ExtensibleMatch MatchingRuleAssertion
     deriving (Show, Eq)
 
-data SubstringFilter = SubstringFilter AttributeDescription (NonEmpty Substring)
+data SubstringFilter = SubstringFilter !AttributeDescription !(NonEmpty Substring)
     deriving (Show, Eq)
 
 data Substring =
-    Initial AssertionValue
-  | Any AssertionValue
-  | Final AssertionValue
+    Initial !AssertionValue
+  | Any !AssertionValue
+  | Final !AssertionValue
     deriving (Show, Eq)
 
-data MatchingRuleAssertion = MatchingRuleAssertion (Maybe MatchingRuleId) (Maybe AttributeDescription) AssertionValue Bool
+data MatchingRuleAssertion = MatchingRuleAssertion !(Maybe MatchingRuleId) !(Maybe AttributeDescription) !AssertionValue !Bool
     deriving (Show, Eq)
 
 -- | Matching rules are defined in Section 4.1.3 of [RFC4512].  A matching
@@ -107,12 +113,13 @@ newtype PartialAttributeList = PartialAttributeList [PartialAttribute]
 newtype Controls = Controls [Control]
     deriving (Show, Eq)
 
-data Control = Control LdapOid Bool (Maybe ByteString)
+data Control = Control !LdapOid !Bool !(Maybe ByteString)
     deriving (Show, Eq)
 
-data LdapResult = LdapResult ResultCode LdapDn LdapString (Maybe ReferralUris)
+data LdapResult = LdapResult !ResultCode !LdapDn !LdapString !(Maybe ReferralUris)
     deriving (Show, Eq)
 
+-- | LDAP operation's result.
 data ResultCode =
     Success
   | OperationError
@@ -161,16 +168,16 @@ newtype AttributeDescription = AttributeDescription LdapString
 newtype AttributeValue = AttributeValue ByteString
     deriving (Show, Eq)
 
-data AttributeValueAssertion = AttributeValueAssertion AttributeDescription AssertionValue
+data AttributeValueAssertion = AttributeValueAssertion !AttributeDescription !AssertionValue
     deriving (Show, Eq)
 
 newtype AssertionValue = AssertionValue ByteString
     deriving (Show, Eq)
 
-data Attribute = Attribute AttributeDescription (NonEmpty AttributeValue)
+data Attribute = Attribute !AttributeDescription !(NonEmpty AttributeValue)
     deriving (Show, Eq)
 
-data PartialAttribute = PartialAttribute AttributeDescription [AttributeValue]
+data PartialAttribute = PartialAttribute !AttributeDescription ![AttributeValue]
     deriving (Show, Eq)
 
 
