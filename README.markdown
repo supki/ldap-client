@@ -1,6 +1,3 @@
-:warning:
-**This is work in progress. Use [LDAP][LDAP] if you need LDAP integration.**
-
 ldap-client
 ===========
 [![Build Status](https://travis-ci.org/supki/ldap-client.svg?branch=master)](https://travis-ci.org/supki/ldap-client)

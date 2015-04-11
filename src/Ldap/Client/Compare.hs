@@ -17,6 +17,9 @@ module Ldap.Client.Compare
   , compareEither
   , compareAsync
   , compareAsyncSTM
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)

@@ -2,15 +2,19 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
--- | Pure Haskell LDAP client library.
+-- | This module is intended to be imported qualified
+--
+-- @
+-- import qualified Ldap.Client as Ldap
+-- @
 module Ldap.Client
-  ( Host(..)
+  ( with
+  , Host(..)
+  , PortNumber
   , Ldap
   , LdapError(..)
   , ResponseError(..)
   , Type.ResultCode(..)
-  , Async
-  , with
     -- * Bind
   , Password(..)
   , bind
@@ -43,8 +47,6 @@ module Ldap.Client
     -- * Extended
   , Oid(..)
   , extended
-    -- * Waiting for completion
-  , wait
     -- * Miscellanous
   , Dn(..)
   , Attr(..)
@@ -52,7 +54,6 @@ module Ldap.Client
   , AttrList
     -- * Re-exports
   , NonEmpty
-  , PortNumber
   ) where
 
 #if __GLASGOW_HASKELL__ < 710

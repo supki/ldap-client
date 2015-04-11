@@ -29,6 +29,9 @@ module Ldap.Client.Search
   , derefAliases
   , Filter(..)
   , SearchEntry(..)
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)

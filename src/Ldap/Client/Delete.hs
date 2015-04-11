@@ -16,6 +16,9 @@ module Ldap.Client.Delete
   , deleteEither
   , deleteAsync
   , deleteAsyncSTM
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Concurrent.STM (STM, atomically)

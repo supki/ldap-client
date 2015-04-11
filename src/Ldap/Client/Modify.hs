@@ -25,6 +25,9 @@ module Ldap.Client.Modify
   , modifyDnEither
   , modifyDnAsync
   , modifyDnAsyncSTM
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)

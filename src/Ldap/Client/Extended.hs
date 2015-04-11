@@ -23,6 +23,9 @@ module Ldap.Client.Extended
   , startTlsEither
   , startTlsAsync
   , startTlsAsyncSTM
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Monad ((<=<))

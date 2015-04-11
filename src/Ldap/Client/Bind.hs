@@ -17,6 +17,9 @@ module Ldap.Client.Bind
   , bindEither
   , bindAsync
   , bindAsyncSTM
+  , Async
+  , wait
+  , waitSTM
   ) where
 
 import           Control.Monad.STM (STM, atomically)
