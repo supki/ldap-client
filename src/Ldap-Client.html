@@ -13,55 +13,55 @@
 <a name="line-4"></a><span class='hs-comment'>{-# LANGUAGE NamedFieldPuns #-}</span>
 <a name="line-5"></a><span class='hs-comment'>-- | Pure Haskell LDAP client library.</span>
 <a name="line-6"></a><span class='hs-keyword'>module</span> <span class='hs-conid'>Ldap</span><span class='hs-varop'>.</span><span class='hs-conid'>Client</span>
-<a name="line-7"></a>  <span class='hs-layout'>(</span> <span class='hs-conid'>Host</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-8"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Ldap</span>
-<a name="line-9"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>LdapError</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-10"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>ResponseError</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-11"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>ResultCode</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-12"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Async</span>
-<a name="line-13"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>with</span>
-<a name="line-14"></a>    <span class='hs-comment'>-- * Bind</span>
-<a name="line-15"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Password</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-16"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>bind</span>
-<a name="line-17"></a>    <span class='hs-comment'>-- * Search</span>
-<a name="line-18"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>search</span>
-<a name="line-19"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>SearchEntry</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-20"></a>    <span class='hs-comment'>-- ** Search modifiers</span>
-<a name="line-21"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Search</span>
-<a name="line-22"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Mod</span>
-<a name="line-23"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>Scope</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-24"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>scope</span>
-<a name="line-25"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>size</span>
-<a name="line-26"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>time</span>
-<a name="line-27"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>typesOnly</span>
-<a name="line-28"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>DerefAliases</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-29"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>derefAliases</span>
-<a name="line-30"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Filter</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-31"></a>    <span class='hs-comment'>-- * Modify</span>
-<a name="line-32"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>modify</span>
-<a name="line-33"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Operation</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-34"></a>    <span class='hs-comment'>-- * Add</span>
-<a name="line-35"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>add</span>
-<a name="line-36"></a>    <span class='hs-comment'>-- * Delete</span>
-<a name="line-37"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>delete</span>
-<a name="line-38"></a>    <span class='hs-comment'>-- * ModifyDn</span>
-<a name="line-39"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>RelativeDn</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-40"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>modifyDn</span>
-<a name="line-41"></a>    <span class='hs-comment'>-- * Compare</span>
-<a name="line-42"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>compare</span>
-<a name="line-43"></a>    <span class='hs-comment'>-- * Extended</span>
-<a name="line-44"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Oid</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-45"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>extended</span>
-<a name="line-46"></a>    <span class='hs-comment'>-- * Waiting for completion</span>
-<a name="line-47"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>wait</span>
-<a name="line-48"></a>    <span class='hs-comment'>-- * Miscellanous</span>
-<a name="line-49"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Dn</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-50"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Attr</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
-<a name="line-51"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>AttrValue</span>
-<a name="line-52"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>AttrList</span>
-<a name="line-53"></a>    <span class='hs-comment'>-- * Re-exports</span>
-<a name="line-54"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>NonEmpty</span>
-<a name="line-55"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>PortNumber</span>
+<a name="line-7"></a>  <span class='hs-layout'>(</span> <span class='hs-varid'>with</span>
+<a name="line-8"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Host</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-9"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>PortNumber</span>
+<a name="line-10"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Ldap</span>
+<a name="line-11"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>LdapError</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-12"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>ResponseError</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-13"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>ResultCode</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-14"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Async</span>
+<a name="line-15"></a>    <span class='hs-comment'>-- * Bind</span>
+<a name="line-16"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Password</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-17"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>bind</span>
+<a name="line-18"></a>    <span class='hs-comment'>-- * Search</span>
+<a name="line-19"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>search</span>
+<a name="line-20"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>SearchEntry</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-21"></a>    <span class='hs-comment'>-- ** Search modifiers</span>
+<a name="line-22"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Search</span>
+<a name="line-23"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Mod</span>
+<a name="line-24"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>Scope</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-25"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>scope</span>
+<a name="line-26"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>size</span>
+<a name="line-27"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>time</span>
+<a name="line-28"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>typesOnly</span>
+<a name="line-29"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Type</span><span class='hs-varop'>.</span><span class='hs-conid'>DerefAliases</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-30"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>derefAliases</span>
+<a name="line-31"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Filter</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-32"></a>    <span class='hs-comment'>-- * Modify</span>
+<a name="line-33"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>modify</span>
+<a name="line-34"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Operation</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-35"></a>    <span class='hs-comment'>-- * Add</span>
+<a name="line-36"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>add</span>
+<a name="line-37"></a>    <span class='hs-comment'>-- * Delete</span>
+<a name="line-38"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>delete</span>
+<a name="line-39"></a>    <span class='hs-comment'>-- * ModifyDn</span>
+<a name="line-40"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>RelativeDn</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-41"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>modifyDn</span>
+<a name="line-42"></a>    <span class='hs-comment'>-- * Compare</span>
+<a name="line-43"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>compare</span>
+<a name="line-44"></a>    <span class='hs-comment'>-- * Extended</span>
+<a name="line-45"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Oid</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-46"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>extended</span>
+<a name="line-47"></a>    <span class='hs-comment'>-- * Waiting for completion</span>
+<a name="line-48"></a>  <span class='hs-layout'>,</span> <span class='hs-varid'>wait</span>
+<a name="line-49"></a>    <span class='hs-comment'>-- * Miscellanous</span>
+<a name="line-50"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Dn</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-51"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>Attr</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span>
+<a name="line-52"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>AttrValue</span>
+<a name="line-53"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>AttrList</span>
+<a name="line-54"></a>    <span class='hs-comment'>-- * Re-exports</span>
+<a name="line-55"></a>  <span class='hs-layout'>,</span> <span class='hs-conid'>NonEmpty</span>
 <a name="line-56"></a>  <span class='hs-layout'>)</span> <span class='hs-keyword'>where</span>
 <a name="line-57"></a>
 <a name="line-58"></a><span class='hs-cpp'>#if __GLASGOW_HASKELL__ &lt; 710</span>
