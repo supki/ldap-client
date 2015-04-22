@@ -155,7 +155,7 @@ spec = do
 
   it "‘extensible’ filter" $ do
     res <- locally $ \l -> do
-      res <- go l ((Just (Attr "type"), Nothing, True) ::= "flying")
+      res <- go l ((Just (Attr "type"), Nothing, False) ::= "flying")
       dns res `shouldMatchList`
         [ butterfree
         , charizard

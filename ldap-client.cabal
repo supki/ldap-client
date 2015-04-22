@@ -35,6 +35,7 @@ library
     Ldap.Asn1.Type
     Ldap.Client
     Ldap.Client.Add
+    Ldap.Client.Asn1.ToAsn1
     Ldap.Client.Bind
     Ldap.Client.Compare
     Ldap.Client.Delete
@@ -81,3 +82,16 @@ test-suite spec
     , ldap-client
     , process
     , semigroups
+
+test-suite doctests
+  default-language:
+    Haskell2010
+  type:
+    exitcode-stdio-1.0
+  hs-source-dirs:
+    test
+  main-is:
+    Doctests.hs
+  build-depends:
+      base          >= 4.6 && < 5
+    , doctest

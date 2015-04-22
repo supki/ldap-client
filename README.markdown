@@ -11,7 +11,7 @@ Bind Operation               | [4.2][4.2]      | ✔
 Unbind Operation             | [4.3][4.3]      | ✔
 Unsolicited Notification     | [4.4][4.4]      | ✔
 Notice of Disconnection      | [4.4.1][4.4.1]  | ✔
-Search Operation             | [4.5][4.5]      | ✔\*
+Search Operation             | [4.5][4.5]      | ✔
 Modify Operation             | [4.6][4.6]      | ✔
 Add Operation                | [4.7][4.7]      | ✔
 Delete Operation             | [4.8][4.8]      | ✔
@@ -23,7 +23,6 @@ IntermediateResponse Message | [4.13][4.13]    | ✔
 StartTLS Operation           | [4.14][4.14]    | ✔†
 LDAP over TLS                | -               | ✔
 
-\* The `:dn` thing is unsupported in Extensible matches  
 † Only serves as an example of Extended Operation.  It's useless for all practical purposes as it does not actually enable TLS.  In other words, use LDAP over TLS instead.
 
   [rfc4511]: https://tools.ietf.org/html/rfc4511

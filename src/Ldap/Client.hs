@@ -74,7 +74,9 @@ import           Data.Foldable (asum)
 import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
-import           Data.Monoid (Endo(appEndo))
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Monoid (mempty)
+#endif
 import           Data.String (fromString)
 import           Data.Text (Text)
 #if __GLASGOW_HASKELL__ < 710
@@ -86,9 +88,10 @@ import qualified Network.Connection as Conn
 import           Prelude hiding (compare)
 import qualified System.IO.Error as IO
 
-import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
+import           Ldap.Asn1.ToAsn1 (encode)
 import qualified Ldap.Asn1.Type as Type
+import           Ldap.Client.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Client.Internal
 import           Ldap.Client.Bind (Password(..), bind)
 import           Ldap.Client.Search
@@ -203,9 +206,7 @@ input inq conn = wrap . flip fix [] $ \loop chunks -> do
 output :: ToAsn1 a => TQueue a -> Connection -> IO b
 output out conn = wrap . forever $ do
   msg <- atomically (readTQueue out)
-  Conn.connectionPut conn (encode (toAsn1 msg))
- where
-  encode x = Asn1.encodeASN1' Asn1.DER (appEndo x [])
+  Conn.connectionPut conn (ByteString.Lazy.toStrict (encode (toAsn1 mempty msg)))
 
 dispatch
   :: Ldap

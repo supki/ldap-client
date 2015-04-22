@@ -1,429 +1,217 @@
--- | This module contains convertions from LDAP types to ASN.1.
---
--- Various hacks are employed because "asn1-encoding" only encodes to DER, but
--- LDAP demands BER-encoding.  So, when a definition looks suspiciously different
--- from the spec in the comment, that's why.  I hope all that will be fixed
--- eventually.
+{-# LANGUAGE CPP #-}
 module Ldap.Asn1.ToAsn1
-  ( ToAsn1(toAsn1)
+  ( Ber
+  , encode
+  , bool
+  , int32
+  , enum
+  , octetstring
+  , null
+  , sequence
+  , set
+  , tagged
+  , Mod
+  , Tag
+  , application
+  , context
+  , tag
   ) where
 
-import           Data.ASN1.Types (ASN1, ASN1Class, ASN1Tag, ASN1ConstructionType)
-import qualified Data.ASN1.Types as Asn1
-import           Data.ByteString (ByteString)
-import           Data.Foldable (fold, foldMap)
-import           Data.List.NonEmpty (NonEmpty)
-import           Data.Maybe (maybe)
-import           Data.Monoid (Endo(Endo), (<>), mempty)
-import qualified Data.Text.Encoding as Text
-import           Prelude (Integer, (.), fromIntegral)
+import           Data.Bits (Bits((.&.), (.|.), shiftR))
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Lazy as ByteString.Lazy
+import           Data.ByteString.Lazy (ByteString)
+import           Data.ByteString.Lazy.Builder (Builder)
+import qualified Data.ByteString.Lazy.Builder as Builder
+import           Data.Int (Int64, Int32)
+import           Data.List.NonEmpty (NonEmpty((:|)))
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Monoid (Monoid(..))
+#endif
+import           Data.Semigroup (Semigroup(..))
+import           Data.Word (Word8)
+import           Prelude hiding (null, sequence)
 
-import           Ldap.Asn1.Type
+-- $setup
+-- >>> :set -XOverloadedStrings
 
+data Ber = Ber !Int64 !Builder
 
--- | Convert a LDAP type to ASN.1.
+instance Semigroup Ber where
+  Ber l b <> Ber l' b' = Ber (l + l') (b <> b')
+
+instance Monoid Ber where
+  mempty = Ber 0 mempty
+  mappend = (<>)
+
+encode :: Ber -> ByteString
+encode (Ber _ b) = Builder.toLazyByteString b
+
+-- | Encoding of a boolean value.
 --
--- When it's relevant, instances include the part of RFC describing the encoding.
-class ToAsn1 a where
-  toAsn1 :: a -> Endo [ASN1]
+-- >>> encode (bool mempty True)
+-- "\SOH\SOH\255"
+--
+-- >>> encode (bool mempty False)
+-- "\SOH\SOH\NUL"
+bool :: Mod -> Bool -> Ber
+bool f b = fromBytes ((t .|. classBit f) : ts ++ [0x01, if b then 0xFF else 0x00])
+ where
+  t :| ts = tagBits (tag 0x01 <> f)
 
-{- |
-@
-LDAPMessage ::= SEQUENCE {
-     messageID       MessageID,
-     protocolOp      CHOICE {
-          bindRequest           BindRequest,
-          bindResponse          BindResponse,
-          unbindRequest         UnbindRequest,
-          searchRequest         SearchRequest,
-          searchResEntry        SearchResultEntry,
-          searchResDone         SearchResultDone,
-          searchResRef          SearchResultReference,
-          addRequest            AddRequest,
-          addResponse           AddResponse,
-          ... },
-     controls       [0] Controls OPTIONAL }
-@
--}
-instance ToAsn1 op => ToAsn1 (LdapMessage op) where
-  toAsn1 (LdapMessage i op mc) =
-    sequence (toAsn1 i <> toAsn1 op <> maybe mempty (context 0 . toAsn1) mc)
-
-{- |
-@
-MessageID ::= INTEGER (0 ..  maxInt)
-@
--}
-instance ToAsn1 Id where
-  toAsn1 (Id i) = single (Asn1.IntVal (fromIntegral i))
-
-{- |
-@
-LDAPString ::= OCTET STRING -- UTF-8 encoded
-@
--}
-instance ToAsn1 LdapString where
-  toAsn1 (LdapString s) = single (Asn1.OctetString (Text.encodeUtf8 s))
-
-{- |
-@
-LDAPOID ::= OCTET STRING -- Constrained to \<numericoid\>
-@
--}
-instance ToAsn1 LdapOid where
-  toAsn1 (LdapOid s) = single (Asn1.OctetString (Text.encodeUtf8 s))
-
-{- |
-@
-LDAPDN ::= LDAPString -- Constrained to \<distinguishedName\>
-@
--}
-instance ToAsn1 LdapDn where
-  toAsn1 (LdapDn s) = toAsn1 s
-
-{- |
-@
-RelativeLDAPDN ::= LDAPString -- Constrained to \<name-component\>
-@
--}
-instance ToAsn1 RelativeLdapDn where
-  toAsn1 (RelativeLdapDn s) = toAsn1 s
-
-{- |
-@
-AttributeDescription ::= LDAPString
-@
--}
-instance ToAsn1 AttributeDescription where
-  toAsn1 (AttributeDescription s) = toAsn1 s
-
-{- |
-@
-AttributeValue ::= OCTET STRING
-@
--}
-instance ToAsn1 AttributeValue where
-  toAsn1 (AttributeValue s) = single (Asn1.OctetString s)
-
-{- |
-@
-AttributeValueAssertion ::= SEQUENCE {
-     attributeDesc   AttributeDescription,
-     assertionValue  AssertionValue }
-@
--}
-instance ToAsn1 AttributeValueAssertion where
-  toAsn1 (AttributeValueAssertion d v) = toAsn1 d <> toAsn1 v
-
-{- |
-@
-AssertionValue ::= OCTET STRING
-@
--}
-instance ToAsn1 AssertionValue where
-  toAsn1 (AssertionValue s) = single (Asn1.OctetString s)
-
-
-{- |
-@
-PartialAttribute ::= SEQUENCE {
-     type       AttributeDescription,
-     vals       SET OF value AttributeValue }
-@
--}
-instance ToAsn1 PartialAttribute where
-  toAsn1 (PartialAttribute d xs) = sequence (toAsn1 d <> set (toAsn1 xs))
-
-{- |
-@
-Attribute ::= PartialAttribute(WITH COMPONENTS {
-     ...,
-     vals (SIZE(1..MAX))})
-@
--}
-instance ToAsn1 Attribute where
-  toAsn1 (Attribute d xs) = sequence (toAsn1 d <> set (toAsn1 xs))
-
-{- |
-@
-MatchingRuleId ::= LDAPString
-@
--}
-instance ToAsn1 MatchingRuleId where
-  toAsn1 (MatchingRuleId s) = toAsn1 s
-
-{- |
-@
-Controls ::= SEQUENCE OF control Control
-@
--}
-instance ToAsn1 Controls where
-  toAsn1 (Controls cs) = sequence (toAsn1 cs)
-
-{- |
-@
-Control ::= SEQUENCE {
-     controlType             LDAPOID,
-     criticality             BOOLEAN DEFAULT FALSE,
-     controlValue            OCTET STRING OPTIONAL }
-@
--}
-instance ToAsn1 Control where
-  toAsn1 (Control t c v) =
-    sequence (fold
-      [ toAsn1 t
-      , single (Asn1.Boolean c)
-      , maybe mempty (single . Asn1.OctetString) v
-      ])
-
-{- |
-@
-BindRequest ::= [APPLICATION 0] SEQUENCE {
-     version                 INTEGER (1 ..  127),
-     name                    LDAPDN,
-     authentication          AuthenticationChoice }
-@
-
-@
-UnbindRequest ::= [APPLICATION 2] NULL
-@
-
-@
-SearchRequest ::= [APPLICATION 3] SEQUENCE {
-     baseObject      LDAPDN,
-     scope           ENUMERATED {
-          baseObject              (0),
-          singleLevel             (1),
-          wholeSubtree            (2),
-          ...  },
-     derefAliases    ENUMERATED {
-          neverDerefAliases       (0),
-          derefInSearching        (1),
-          derefFindingBaseObj     (2),
-          derefAlways             (3) },
-     sizeLimit       INTEGER (0 ..  maxInt),
-     timeLimit       INTEGER (0 ..  maxInt),
-     typesOnly       BOOLEAN,
-     filter          Filter,
-     attributes      AttributeSelection }
-@
-
-@
-ModifyRequest ::= [APPLICATION 6] SEQUENCE {
-     object          LDAPDN,
-     changes         SEQUENCE OF change SEQUENCE {
-          operation       ENUMERATED {
-               add     (0),
-               delete  (1),
-               replace (2),
-               ...  },
-          modification    PartialAttribute } }
-@
-
-@
-AddRequest ::= [APPLICATION 8] SEQUENCE {
-     entry           LDAPDN,
-     attributes      AttributeList }
-@
-
-@
-DelRequest ::= [APPLICATION 10] LDAPDN
-@
-
-@
-ModifyDNRequest ::= [APPLICATION 12] SEQUENCE {
-     entry           LDAPDN,
-     newrdn          RelativeLDAPDN,
-     deleteoldrdn    BOOLEAN,
-     newSuperior     [0] LDAPDN OPTIONAL }
-@
-
-@
-CompareRequest ::= [APPLICATION 14] SEQUENCE {
-     entry           LDAPDN,
-     ava             AttributeValueAssertion }
-@
-
-@
-ExtendedRequest ::= [APPLICATION 23] SEQUENCE {
-     requestName      [0] LDAPOID,
-     requestValue     [1] OCTET STRING OPTIONAL }
-@
--}
-instance ToAsn1 ProtocolClientOp where
-  toAsn1 (BindRequest v n a) =
-    application 0 (single (Asn1.IntVal (fromIntegral v)) <> toAsn1 n <> toAsn1 a)
-  toAsn1 UnbindRequest =
-    other Asn1.Application 2 mempty
-  toAsn1 (SearchRequest bo s da sl tl to f a) =
-    application 3 (fold
-      [ toAsn1 bo
-      , enum s'
-      , enum da'
-      , single (Asn1.IntVal (fromIntegral sl))
-      , single (Asn1.IntVal (fromIntegral tl))
-      , single (Asn1.Boolean to)
-      , toAsn1 f
-      , toAsn1 a
-      ])
+-- | Encoding of an integer value.
+--
+-- >>> encode (int32 mempty 0)
+-- "\STX\SOH\NUL"
+--
+-- >>> encode (int32 mempty 127)
+-- "\STX\SOH\DEL"
+--
+-- >>> encode (int32 mempty 128)
+-- "\STX\STX\NUL\128"
+int32 :: Mod -> Int32 -> Ber
+int32 f n = fromBytes ((t .|. classBit f) : ts ++ fromIntegral (length bytes) : bytes)
+ where
+  t :| ts = tagBits (tag 0x02 <> f)
+  bytes
+    | n .&. 0x80 == 0x80 = 0x00 : reverse (go n)
+    | otherwise = reverse (go n)
    where
-    s' = case s of
-      BaseObject   -> 0
-      SingleLevel  -> 1
-      WholeSubtree -> 2
-    da' = case da of
-      NeverDerefAliases      -> 0
-      DerefInSearching       -> 1
-      DerefFindingBaseObject -> 2
-      DerefAlways            -> 3
-  toAsn1 (ModifyRequest dn xs) =
-    application 6 (fold
-      [ toAsn1 dn
-      , sequence (foldMap (\(op, pa) -> sequence (enum (case op of
-          Add     -> 0
-          Delete  -> 1
-          Replace -> 2) <> toAsn1 pa)) xs)
-      ])
-  toAsn1 (AddRequest dn as) =
-    application 8 (toAsn1 dn <> toAsn1 as)
-  toAsn1 (DeleteRequest (LdapDn (LdapString dn))) =
-    other Asn1.Application 10 (Text.encodeUtf8 dn)
-  toAsn1 (ModifyDnRequest dn rdn del new) =
-    application 12 (fold
-      [ toAsn1 dn
-      , toAsn1 rdn
-      , single (Asn1.Boolean del)
-      , maybe mempty
-              (\(LdapDn (LdapString dn')) -> other Asn1.Context 0 (Text.encodeUtf8 dn'))
-              new
-      ])
-  toAsn1 (CompareRequest dn av) =
-    application 14 (toAsn1 dn <> sequence (toAsn1 av))
-  toAsn1 (ExtendedRequest (LdapOid oid) mv) =
-    application 23 (fold
-     [ other Asn1.Context 0 (Text.encodeUtf8 oid)
-     , maybe mempty (other Asn1.Context 1) mv
-     ])
+    go i
+      | i <= 0xff = return (fromIntegral i)
+      | otherwise = (fromIntegral i .&. 0xff) : go (i `shiftR` 8)
 
-{- |
-@
-AuthenticationChoice ::= CHOICE {
-     simple                  [0] OCTET STRING,
-     ...  }
-@
--}
-instance ToAsn1 AuthenticationChoice where
-  toAsn1 (Simple s) = other Asn1.Context 0 s
+-- | Encoding of an enumerated value.
+--
+-- It is encoded exactly the same as an integer value, but the tag number is different.
+enum :: Mod -> Int32 -> Ber
+enum f = int32 (tag 0x0a <> f)
 
-{- |
-@
-AttributeSelection ::= SEQUENCE OF selector LDAPString
-@
--}
-instance ToAsn1 AttributeSelection where
-  toAsn1 (AttributeSelection as) = sequence (toAsn1 as)
+-- | Encoding of an octet string.
+octetstring :: Mod -> ByteString.ByteString -> Ber
+octetstring f bs = Ber
+  (fromIntegral (ByteString.length bs) + 2 + fromIntegral (length ts))
+  (Builder.word8 (t .|. classBit f) <> Builder.lazyByteString (ByteString.Lazy.pack ts) <>
+   Builder.byteString (ByteString.pack (encodeLength (ByteString.length bs))) <>
+   Builder.byteString bs)
+ where
+  t :| ts = tagBits (tag 0x04 <> f)
 
-{- |
-@
-Filter ::= CHOICE {
-     and             [0] SET SIZE (1..MAX) OF filter Filter,
-     or              [1] SET SIZE (1..MAX) OF filter Filter,
-     not             [2] Filter,
-     equalityMatch   [3] AttributeValueAssertion,
-     substrings      [4] SubstringFilter,
-     greaterOrEqual  [5] AttributeValueAssertion,
-     lessOrEqual     [6] AttributeValueAssertion,
-     present         [7] AttributeDescription,
-     approxMatch     [8] AttributeValueAssertion,
-     extensibleMatch [9] MatchingRuleAssertion,
-     ...  }
-@
--}
-instance ToAsn1 Filter where
-  toAsn1 f = case f of
-    And xs            -> context 0 (toAsn1 xs)
-    Or xs             -> context 1 (toAsn1 xs)
-    Not x             -> context 2 (toAsn1 x)
-    EqualityMatch x   -> context 3 (toAsn1 x)
-    Substrings x      -> context 4 (toAsn1 x)
-    GreaterOrEqual x  -> context 5 (toAsn1 x)
-    LessOrEqual x     -> context 6 (toAsn1 x)
-    Present (AttributeDescription (LdapString x))
-                      -> other Asn1.Context 7 (Text.encodeUtf8 x)
-    ApproxMatch x     -> context 8 (toAsn1 x)
-    ExtensibleMatch x -> context 9 (toAsn1 x)
+-- | Encoding of NULL
+--
+-- >>> encode (null mempty)
+-- "\ENQ\NUL"
+null :: Mod -> Ber
+null f = fromBytes ((t .|. classBit f) : ts ++ [0])
+ where
+  t :| ts = tagBits (tag 0x05 <> f)
 
-{- |
-@
-SubstringFilter ::= SEQUENCE {
-     type           AttributeDescription,
-     substrings     SEQUENCE SIZE (1..MAX) OF substring CHOICE {
-          initial [0] AssertionValue,  -- can occur at most once
-          any     [1] AssertionValue,
-          final   [2] AssertionValue } -- can occur at most once
-     }
-@
--}
-instance ToAsn1 SubstringFilter where
-  toAsn1 (SubstringFilter ad ss) =
-    toAsn1 ad <> sequence (foldMap (\s -> case s of
-      Initial (AssertionValue v) -> other Asn1.Context 0 v
-      Any (AssertionValue v)     -> other Asn1.Context 1 v
-      Final (AssertionValue v)   -> other Asn1.Context 2 v) ss)
+-- | Encoding of a sequence [of].
+--
+-- >>> encode (sequence mempty (octetstring mempty "Smith" <> bool mempty True))
+-- "0\n\EOT\ENQSmith\SOH\SOH\255"
+sequence :: Mod -> Ber -> Ber
+sequence m = tagged (tag 0x10 <> m)
 
-{- |
-@
-MatchingRuleAssertion ::= SEQUENCE {
-     matchingRule    [1] MatchingRuleId OPTIONAL,
-     type            [2] AttributeDescription OPTIONAL,
-     matchValue      [3] AssertionValue,
-     dnAttributes    [4] BOOLEAN DEFAULT FALSE }
-@
--}
-instance ToAsn1 MatchingRuleAssertion where
-  toAsn1 (MatchingRuleAssertion mmr mad (AssertionValue av) _) = fold
-    [ maybe mempty f mmr
-    , maybe mempty g mad
-    , other Asn1.Context 3 av
-    ]
-   where
-    f (MatchingRuleId (LdapString x)) = other Asn1.Context 1 (Text.encodeUtf8 x)
-    g (AttributeDescription (LdapString x)) = other Asn1.Context 2 (Text.encodeUtf8 x)
+-- | Encoding of a set [of].
+--
+-- >>> encode (set mempty (octetstring mempty "Smith" <> bool mempty True))
+-- "1\n\EOT\ENQSmith\SOH\SOH\255"
+set :: Mod -> Ber -> Ber
+set m = tagged (tag 0x11 <> m)
 
-{- |
-@
-AttributeList ::= SEQUENCE OF attribute Attribute
-@
--}
-instance ToAsn1 AttributeList where
-  toAsn1 (AttributeList xs) = sequence (toAsn1 xs)
+-- | Encoding of a (possibly tagged) constructed value.
+tagged :: Mod -> Ber -> Ber
+tagged f b@(Ber l _) = fromBytes ((t .|. constructedTag .|. classBit f) : ts ++ encodeLength l) <> b
+ where
+  t :| ts = tagBits f
+  constructedTag = 0x20
 
-instance ToAsn1 a => ToAsn1 [a] where
-  toAsn1 = foldMap toAsn1
+fromBytes :: [Word8] -> Ber
+fromBytes xs = let bs = ByteString.Lazy.pack xs in Ber (ByteString.Lazy.length bs) (Builder.lazyByteString bs)
 
-instance ToAsn1 a => ToAsn1 (NonEmpty a) where
-  toAsn1 = foldMap toAsn1
+defaultTag :: Tag
+defaultTag = Tag Universal (Number 0)
 
-sequence :: Endo [ASN1] -> Endo [ASN1]
-sequence = construction Asn1.Sequence
+newtype Mod = Mod (Tag -> Tag)
 
-set :: Endo [ASN1] -> Endo [ASN1]
-set = construction Asn1.Set
+instance Semigroup Mod where
+  Mod f <> Mod g = Mod (g . f)
 
-application :: ASN1Tag -> Endo [ASN1] -> Endo [ASN1]
-application = construction . Asn1.Container Asn1.Application
+instance Monoid Mod where
+  mappend = (<>)
+  mempty = Mod id
 
-context :: ASN1Tag -> Endo [ASN1] -> Endo [ASN1]
-context = construction . Asn1.Container Asn1.Context
+data Class =
+    Universal
+  | Application
+  | Context
+    deriving (Show, Eq)
 
-construction :: ASN1ConstructionType -> Endo [ASN1] -> Endo [ASN1]
-construction t x = single (Asn1.Start t) <> x <> single (Asn1.End t)
+data Tag = Tag !Class !Number
+    deriving (Show, Eq)
 
-other :: ASN1Class -> ASN1Tag -> ByteString -> Endo [ASN1]
-other c t = single . Asn1.Other c t
+newtype Number = Number Word8
+    deriving (Show, Eq)
 
-enum :: Integer -> Endo [ASN1]
-enum = single . Asn1.Enumerated
+classBit :: Mod -> Word8
+classBit (Mod f) = case f defaultTag of
+  Tag Universal _   -> 0x00
+  Tag Application _ -> 0x40
+  Tag Context _     -> 0x80
 
-single :: a -> Endo [a]
-single x = Endo (x :)
+tagBits :: Mod -> NonEmpty Word8
+tagBits (Mod f) = case f defaultTag of Tag _ t -> encodeTagNumber t
+
+application, context :: Mod
+application = class_ Application
+context     = class_ Context
+
+class_ :: Class -> Mod
+class_ c = Mod (\(Tag _ t) -> Tag c t)
+
+tag :: Word8 -> Mod
+tag t = Mod (\(Tag c _) -> Tag c (Number t))
+
+-- | Small tag numbers (up to and including 30) are bit-OR'd
+-- directly with the first Identifier byte, while the bigger ones
+-- are encoded idiosyncratically.
+--
+-- >>> encodeTagNumber (Number 19)
+-- 19 :| []
+--
+-- >>> encodeTagNumber (Number 31)
+-- 31 :| [31]
+--
+-- >>> encodeTagNumber (Number 137)
+-- 31 :| [129,9]
+encodeTagNumber :: Number -> NonEmpty Word8
+encodeTagNumber (Number n)
+  | n < 30    = return n
+  | otherwise = 0x1f :| reverse (go n)
+ where
+  go  x = fromIntegral (x .&. 0x7f) : go' (x `shiftR` 7)
+  go' 0 = []
+  go' x = (fromIntegral (x .&. 0x7f) .|. 0x80) : go' (x `shiftR` 7)
+
+-- | Small lengths (up to and including 127) are returned as a single
+-- byte equal to length itself, while the bigger one are encoded
+-- idiosyncratically.
+--
+-- >>> encodeLength 7
+-- [7]
+--
+-- >>> encodeLength 12238
+-- [130,47,206]
+--
+-- @
+-- encodeLength :: (Integral a, Bits a) => a -> NonEmpty Word8
+-- @
+encodeLength :: (Integral a, Bits a) => a -> [Word8]
+encodeLength n
+  | n < 0x80  = [fromIntegral n]
+  | otherwise = let (l, xs) = go n in (l .|. 0x80) : reverse xs
+ where
+  go x
+    | x <= 0xff = (1, [fromIntegral x])
+    | otherwise = let (l, xs) = go (x `shiftR` 8) in (l + 1, (fromIntegral x .&. 0xff) : xs)
