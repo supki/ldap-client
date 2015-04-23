@@ -57,12 +57,13 @@ module Ldap.Client
   ) where
 
 #if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative ((<$>))
+import           Control.Applicative ((<$>), (<*>))
 #endif
 import qualified Control.Concurrent.Async as Async
 import           Control.Concurrent.STM (atomically, throwSTM)
 import           Control.Concurrent.STM.TMVar (putTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, writeTQueue, readTQueue)
+import           Control.Concurrent.STM.TVar (newTVarIO)
 import           Control.Exception (Exception, Handler(..), bracket, throwIO, catch, catches)
 import           Control.Monad (forever)
 import qualified Data.ASN1.BinaryEncoding as Asn1
@@ -118,6 +119,7 @@ import           Ldap.Client.Extended (Oid(..), extended)
 newLdap :: IO Ldap
 newLdap = Ldap
   <$> newTQueueIO
+  <*> newTVarIO (Type.Id 0)
 
 -- | Various failures that can happen when working with LDAP.
 data LdapError =
@@ -214,11 +216,11 @@ dispatch
   -> TQueue (Type.LdapMessage Request)
   -> IO a
 dispatch Ldap { client } inq outq =
-  flip fix (Map.empty, 1) $ \loop (!req, !counter) ->
+  flip fix Map.empty $ \loop !req ->
     loop =<< atomically (asum
-      [ do New new var <- readTQueue client
-           writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
-           return (Map.insert (Type.Id counter) ([], var) req, counter + 1)
+      [ do New mid new var <- readTQueue client
+           writeTQueue outq (Type.LdapMessage mid new Nothing)
+           return (Map.insert mid ([], var) req)
       , do Type.LdapMessage mid op _
                <- readTQueue inq
            res <- case op of
@@ -233,7 +235,7 @@ dispatch Ldap { client } inq outq =
              Type.CompareResponse {}       -> done mid op req
              Type.ExtendedResponse {}      -> probablyDisconnect mid op req
              Type.IntermediateResponse {}  -> saveUp mid op req
-           return (res, counter)
+           return res
       ])
  where
   saveUp mid op res =

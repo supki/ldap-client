@@ -6,7 +6,7 @@ module Ldap.Client.Internal
   , Ldap(..)
   , ClientMessage(..)
   , Type.ResultCode(..)
-  , Async
+  , Async(..)
   , AttrList
     -- * Waiting for Request Completion
   , wait
@@ -29,6 +29,7 @@ module Ldap.Client.Internal
 import           Control.Concurrent.STM (STM, atomically)
 import           Control.Concurrent.STM.TMVar (TMVar, newEmptyTMVar, readTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, writeTQueue)
+import           Control.Concurrent.STM.TVar (TVar, modifyTVar, readTVar)
 import           Control.Exception (Exception, throwIO)
 import           Control.Monad (void)
 import           Data.ByteString (ByteString)
@@ -51,18 +52,19 @@ data Host =
 -- | A token. All functions that interact with the Directory require one.
 data Ldap = Ldap
   { client  :: TQueue ClientMessage
+  , counter :: TVar Type.Id
   } deriving (Eq)
 
-data ClientMessage = New Request (TMVar (NonEmpty Type.ProtocolServerOp))
+data ClientMessage = New Type.Id Request (TMVar (NonEmpty Type.ProtocolServerOp))
 type Request = Type.ProtocolClientOp
 type InMessage = Type.ProtocolServerOp
 type Response = NonEmpty InMessage
 
 -- | Asynchronous LDAP operation. Use 'wait' or 'waitSTM' to wait for its completion.
-data Async a = Async (STM (Either ResponseError a))
+data Async a = Async Type.Id (STM (Either ResponseError a))
 
 instance Functor Async where
-  fmap f (Async stm) = Async (fmap (fmap f) stm)
+  fmap f (Async mid stm) = Async mid (fmap (fmap f) stm)
 
 -- | Unique identifier of an LDAP entry.
 newtype Dn = Dn Text
@@ -103,16 +105,22 @@ wait = atomically . waitSTM
 -- should commit. After that, applying 'waitSTM' to the corresponding 'Async'
 -- starts to make sense.
 waitSTM :: Async a -> STM (Either ResponseError a)
-waitSTM (Async stm) = stm
+waitSTM (Async _ stm) = stm
 
 sendRequest :: Ldap -> (Response -> Either ResponseError a) -> Request -> STM (Async a)
 sendRequest l p msg =
   do var <- newEmptyTMVar
-     writeRequest l var msg
-     return (Async (fmap p (readTMVar var)))
+     mid <- newId l
+     writeRequest l (New mid msg var)
+     return (Async mid (fmap p (readTMVar var)))
 
-writeRequest :: Ldap -> TMVar Response -> Request -> STM ()
-writeRequest Ldap { client } var msg = writeTQueue client (New msg var)
+newId :: Ldap -> STM Type.Id
+newId Ldap { counter } =
+  do modifyTVar counter (\(Type.Id mid) -> Type.Id (mid + 1))
+     readTVar counter
+
+writeRequest :: Ldap -> ClientMessage -> STM ()
+writeRequest Ldap { client } = writeTQueue client
 
 raise :: Exception e => Either e a -> IO a
 raise = either throwIO return
@@ -138,4 +146,4 @@ unbindAsyncSTM :: Ldap -> STM ()
 unbindAsyncSTM l =
   void (sendRequest l die Type.UnbindRequest)
  where
-  die = error "Ldap.Client: do not wait for the response to UnbindRequest"
+  die = error "Ldap.Client.Internal: do not wait for the response to UnbindRequest"

@@ -244,6 +244,10 @@ CompareRequest ::= [APPLICATION 14] SEQUENCE {
 @
 
 @
+AbandonRequest ::= [APPLICATION 16] MessageID
+@
+
+@
 ExtendedRequest ::= [APPLICATION 23] SEQUENCE {
      requestName      [0] LDAPOID,
      requestValue     [1] OCTET STRING OPTIONAL }
@@ -296,6 +300,8 @@ instance ToAsn1 ProtocolClientOp where
        foldMap (toAsn1 (context <> tag 0)) new)
   toAsn1 _ (CompareRequest dn av) =
     sequence (application <> tag 14) (toAsn1 mempty dn <> toAsn1 mempty av)
+  toAsn1 _ (AbandonRequest i) =
+    toAsn1 (application <> tag 16) i
   toAsn1 _ (ExtendedRequest oid mv) =
     sequence (application <> tag 23)
      (toAsn1 (context <> tag 0) oid <>

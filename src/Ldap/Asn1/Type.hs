@@ -28,6 +28,7 @@ data ProtocolClientOp =
   | DeleteRequest !LdapDn
   | ModifyDnRequest !LdapDn !RelativeLdapDn !Bool !(Maybe LdapDn)
   | CompareRequest !LdapDn !AttributeValueAssertion
+  | AbandonRequest !Id
   | ExtendedRequest !LdapOid !(Maybe ByteString)
     deriving (Show, Eq)
 

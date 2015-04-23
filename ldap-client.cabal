@@ -34,6 +34,7 @@ library
     Ldap.Asn1.ToAsn1
     Ldap.Asn1.Type
     Ldap.Client
+    Ldap.Client.Abandon
     Ldap.Client.Add
     Ldap.Client.Asn1.ToAsn1
     Ldap.Client.Bind

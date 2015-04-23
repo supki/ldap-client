@@ -17,7 +17,7 @@ Add Operation                | [4.7][4.7]      | ✔
 Delete Operation             | [4.8][4.8]      | ✔
 Modify DN Operation          | [4.9][4.9]      | ✔
 Compare Operation            | [4.10][4.10]    | ✔
-Abandon Operation            | [4.11][4.11]    | ✘
+Abandon Operation            | [4.11][4.11]    | ✔
 Extended Operation           | [4.12][4.12]    | ✔
 IntermediateResponse Message | [4.13][4.13]    | ✔
 StartTLS Operation           | [4.14][4.14]    | ✔†
