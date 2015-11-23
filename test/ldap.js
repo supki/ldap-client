@@ -1,4 +1,4 @@
-#!/usr/bin/env js
+#!/usr/bin/env node
 
 var fs = require('fs');
 var ldapjs = require('ldapjs');
@@ -81,8 +81,9 @@ function authorize(req, res, next) {
 
 server.search('o=localhost', [authorize], function(req, res, next) {
   for (var i = 0; i < pokemon.length; i++) {
-    if (req.filter.matches(pokemon[i].attributes))
+    if (req.filter.matches(pokemon[i].attributes)) {
       res.send(pokemon[i]);
+    }
   };
 
   res.end();
