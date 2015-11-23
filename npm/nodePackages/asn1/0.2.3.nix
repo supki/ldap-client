@@ -1,10 +1,10 @@
 { buildNodePackage, nodePackages, pkgs }:
 buildNodePackage {
     name = "asn1";
-    version = "0.2.1";
+    version = "0.2.3";
     src = pkgs.fetchurl {
-      url = "http://registry.npmjs.org/asn1/-/asn1-0.2.1.tgz";
-      sha1 = "ecc73f75d31ea3c6ed9d47428db35fecc7b2c6dc";
+      url = "http://registry.npmjs.org/asn1/-/asn1-0.2.3.tgz";
+      sha1 = "dac8787713c9966849fc8180777ebe9c1ddf3b86";
     };
     deps = [];
     meta = {

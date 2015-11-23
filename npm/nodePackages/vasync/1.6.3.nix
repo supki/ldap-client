@@ -1,17 +1,16 @@
 { buildNodePackage, nodePackages, pkgs }:
 buildNodePackage {
     name = "vasync";
-    version = "1.4.0";
+    version = "1.6.3";
     src = pkgs.fetchurl {
-      url = "http://registry.npmjs.org/vasync/-/vasync-1.4.0.tgz";
-      sha1 = "6ea5a63582358868d8743cbdd6ffadc9083b910f";
+      url = "http://registry.npmjs.org/vasync/-/vasync-1.6.3.tgz";
+      sha1 = "4a69d7052a47f4ce85503d7641df1cbf40432a94";
     };
     deps = with nodePackages; [
-      jsprim_0-3-0
-      verror_1-1-0
+      verror_1-6-0
     ];
-    devDependencies = [];
     meta = {
+      homepage = "https://github.com/davepacheco/node-vasync";
       description = "utilities for observable asynchronous control flow";
     };
   }

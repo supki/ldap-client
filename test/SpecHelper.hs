@@ -22,9 +22,12 @@ module SpecHelper
   , oddish
   ) where
 
+import Control.Monad (forever)
+import Control.Concurrent (forkIO)
 import Control.Exception (bracket)
 import System.Environment (getEnvironment)
 import System.IO (hGetLine)
+import System.IO.Error (tryIOError)
 import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
 
 import Ldap.Client as Ldap
@@ -39,6 +42,7 @@ locally f =
                                          ("SSL_KEY", "./ssl/key.pem") :
                                          env))
               hGetLine out
+              forkIO (() <$ tryIOError (forever (hGetLine out >>= putStrLn)))
               return h)
           (\h -> do terminateProcess h
                     waitForProcess h)
@@ -55,49 +59,49 @@ dns (SearchEntry dn _ : es) = dn : dns es
 dns [] = []
 
 bulbasaur :: Dn
-bulbasaur = Dn "cn=bulbasaur,o=localhost"
+bulbasaur = Dn "cn=bulbasaur, o=localhost"
 
 ivysaur :: Dn
-ivysaur = Dn "cn=ivysaur,o=localhost"
+ivysaur = Dn "cn=ivysaur, o=localhost"
 
 venusaur :: Dn
-venusaur = Dn "cn=venusaur,o=localhost"
+venusaur = Dn "cn=venusaur, o=localhost"
 
 charmander :: Dn
-charmander = Dn "cn=charmander,o=localhost"
+charmander = Dn "cn=charmander, o=localhost"
 
 charmeleon :: Dn
-charmeleon = Dn "cn=charmeleon,o=localhost"
+charmeleon = Dn "cn=charmeleon, o=localhost"
 
 charizard :: Dn
-charizard = Dn "cn=charizard,o=localhost"
+charizard = Dn "cn=charizard, o=localhost"
 
 squirtle :: Dn
-squirtle = Dn "cn=squirtle,o=localhost"
+squirtle = Dn "cn=squirtle, o=localhost"
 
 wartortle :: Dn
-wartortle = Dn "cn=wartortle,o=localhost"
+wartortle = Dn "cn=wartortle, o=localhost"
 
 blastoise :: Dn
-blastoise = Dn "cn=blastoise,o=localhost"
+blastoise = Dn "cn=blastoise, o=localhost"
 
 caterpie :: Dn
-caterpie = Dn "cn=caterpie,o=localhost"
+caterpie = Dn "cn=caterpie, o=localhost"
 
 metapod :: Dn
-metapod = Dn "cn=metapod,o=localhost"
+metapod = Dn "cn=metapod, o=localhost"
 
 butterfree :: Dn
-butterfree = Dn "cn=butterfree,o=localhost"
+butterfree = Dn "cn=butterfree, o=localhost"
 
 pikachu :: Dn
-pikachu = Dn "cn=pikachu,o=localhost"
+pikachu = Dn "cn=pikachu, o=localhost"
 
 raichu :: Dn
-raichu = Dn "cn=raichu,o=localhost"
+raichu = Dn "cn=raichu, o=localhost"
 
 vulpix :: Dn
-vulpix = Dn "cn=vulpix,o=localhost"
+vulpix = Dn "cn=vulpix, o=localhost"
 
 oddish :: Dn
-oddish = Dn "cn=oddish,o=localhost"
+oddish = Dn "cn=oddish, o=localhost"

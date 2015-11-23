@@ -30,7 +30,7 @@ spec = do
       res `shouldBe` Left
         (ResponseError
           (ResponseErrorCode
-            (Ldap.Type.ModifyRequest (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=pikachu,o=localhost"))
+            (Ldap.Type.ModifyRequest (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=pikachu, o=localhost"))
                                      [( Ldap.Type.Delete
                                      , Ldap.Type.PartialAttribute
                                          (Ldap.Type.AttributeDescription (Ldap.Type.LdapString "password"))
