@@ -27,7 +27,7 @@ spec = do
     res `shouldBe` Left
       (Ldap.ResponseError
         (Ldap.ResponseErrorCode (Ldap.Type.DeleteRequest
-                                  (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=oddish, o=localhost")))
+                                  (Ldap.Type.LdapDn (Ldap.Type.LdapString "cn=oddish,o=localhost")))
                                 Ldap.NoSuchObject
                                 (Dn "o=localhost")
-                                "cn=oddish, o=localhost"))
+                                "cn=oddish,o=localhost"))

@@ -3,8 +3,17 @@
 var fs = require('fs');
 var ldapjs = require('ldapjs');
 
+// Stub unimplemented functionality.
 ldapjs.ExtensibleFilter.prototype.matches = ldapjs.EqualityFilter.prototype.matches;
 ldapjs.ApproximateFilter.prototype.matches = ldapjs.EqualityFilter.prototype.matches;
+
+// Remove superfluous spaces from DNs.
+var wrappee = ldapjs.DN.prototype.format;
+ldapjs.DN.prototype.format = function(options) {
+  options = options || this._format;
+  options['skipSpace'] = true;
+  return (wrappee.bind(this))(options);
+};
 
 var port = process.env.PORT;
 var certificate = fs.readFileSync(process.env.SSL_CERT, "utf-8");
@@ -13,43 +22,43 @@ var server = ldapjs.createServer({certificate: certificate, key: key});
 
 // <http://bulbapedia.bulbagarden.net/wiki/List_of_Pok%C3%A9mon_by_National_Pok%C3%A9dex_number>
 var pokemon = [
-  { dn: 'cn=bulbasaur, o=localhost',
+  { dn: 'cn=bulbasaur,o=localhost',
     attributes: { cn: 'bulbasaur', evolution: "0", type: ["grass", "poison"], }
   },
-  { dn: 'cn=ivysaur, o=localhost',
+  { dn: 'cn=ivysaur,o=localhost',
     attributes: { cn: 'ivysaur', evolution: "1", type: ["grass", "poison"], }
   },
-  { dn: 'cn=venusaur, o=localhost',
+  { dn: 'cn=venusaur,o=localhost',
     attributes: { cn: 'venusaur', evolution: "2", type: ["grass", "poison"], }
   },
-  { dn: 'cn=charmander, o=localhost',
+  { dn: 'cn=charmander,o=localhost',
     attributes: { cn: 'charmander', evolution: "0", type: ["fire"], }
   },
-  { dn: 'cn=charmeleon, o=localhost',
+  { dn: 'cn=charmeleon,o=localhost',
     attributes: { cn: 'charmeleon', evolution: "1", type: ["fire"], }
   },
-  { dn: 'cn=charizard, o=localhost',
+  { dn: 'cn=charizard,o=localhost',
     attributes: { cn: 'charizard', evolution: "2", type: ["fire", "flying"], }
   },
-  { dn: 'cn=squirtle, o=localhost',
+  { dn: 'cn=squirtle,o=localhost',
     attributes: { cn: 'squirtle', evolution: "0", type: ["water"], }
   },
-  { dn: 'cn=wartortle, o=localhost',
+  { dn: 'cn=wartortle,o=localhost',
     attributes: { cn: 'wartortle', evolution: "1", type: ["water"], }
   },
-  { dn: 'cn=blastoise, o=localhost',
+  { dn: 'cn=blastoise,o=localhost',
     attributes: { cn: 'blastoise', evolution: "2", type: ["water"], }
   },
-  { dn: 'cn=caterpie, o=localhost',
+  { dn: 'cn=caterpie,o=localhost',
     attributes: { cn: 'caterpie', evolution: "0", type: ["bug"], }
   },
-  { dn: 'cn=metapod, o=localhost',
+  { dn: 'cn=metapod,o=localhost',
     attributes: { cn: 'metapod', evolution: "1", type: ["bug"], }
   },
-  { dn: 'cn=butterfree, o=localhost',
+  { dn: 'cn=butterfree,o=localhost',
     attributes: { cn: 'butterfree', evolution: "2", type: ["bug", "flying"], }
   },
-  { dn: 'cn=pikachu, o=localhost',
+  { dn: 'cn=pikachu,o=localhost',
     attributes: { cn: 'pikachu', evolution: "0", type: ["electric"], password: ["i-choose-you"] }
   },
   ];
@@ -63,8 +72,8 @@ server.bind('cn=admin', function(req, res, next) {
   }
 });
 
-server.bind('cn=pikachu, o=localhost', function(req, res, next) {
-  if ((req.dn.toString() === 'cn=pikachu, o=localhost') && (req.credentials === 'i-choose-you')) {
+server.bind('cn=pikachu,o=localhost', function(req, res, next) {
+  if ((req.dn.toString() === 'cn=pikachu,o=localhost') && (req.credentials === 'i-choose-you')) {
     res.end();
     return next();
   } else {
