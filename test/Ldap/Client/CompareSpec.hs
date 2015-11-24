@@ -16,7 +16,7 @@ spec = do
       res `shouldBe` True
     res `shouldBe` Right ()
 
-  it "compares and looses" $ do
+  it "compares and loses" $ do
     res <- locally $ \l -> do
       res <- Ldap.compare l charmander (Attr "type") "flying"
       res `shouldBe` False
