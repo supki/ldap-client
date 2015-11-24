@@ -1,7 +1,19 @@
-#!/usr/bin/env js
+#!/usr/bin/env node
 
 var fs = require('fs');
 var ldapjs = require('ldapjs');
+
+// Stub unimplemented functionality.
+ldapjs.ExtensibleFilter.prototype.matches = ldapjs.EqualityFilter.prototype.matches;
+ldapjs.ApproximateFilter.prototype.matches = ldapjs.EqualityFilter.prototype.matches;
+
+// Remove superfluous spaces from DNs.
+var wrappee = ldapjs.DN.prototype.format;
+ldapjs.DN.prototype.format = function(options) {
+  options = options || this._format;
+  options['skipSpace'] = true;
+  return (wrappee.bind(this))(options);
+};
 
 var port = process.env.PORT;
 var certificate = fs.readFileSync(process.env.SSL_CERT, "utf-8");
@@ -81,8 +93,9 @@ function authorize(req, res, next) {
 
 server.search('o=localhost', [authorize], function(req, res, next) {
   for (var i = 0; i < pokemon.length; i++) {
-    if (req.filter.matches(pokemon[i].attributes))
+    if (req.filter.matches(pokemon[i].attributes)) {
       res.send(pokemon[i]);
+    }
   };
 
   res.end();
@@ -163,7 +176,7 @@ server.modifyDN('o=localhost', [], function(req, res, next) {
     if (req.dn.toString() === pokemon[i].dn) {
       req.dn.rdns[0] = req.newRdn.rdns[0];
       pokemon[i].dn = req.dn.toString();
-      pokemon[i].attributes.cn = req.newRdn.rdns[0].cn;
+      pokemon[i].attributes.cn = req.newRdn.rdns[0].attrs.cn.value;
     }
   }
 

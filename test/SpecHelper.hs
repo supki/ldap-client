@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module SpecHelper
   ( locally
@@ -22,8 +23,15 @@ module SpecHelper
   , oddish
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative ((<$))
+#endif
+import Control.Monad (forever)
+import Control.Concurrent (forkIO)
 import Control.Exception (bracket)
+import System.Environment (getEnvironment)
 import System.IO (hGetLine)
+import System.IO.Error (tryIOError)
 import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
 
 import Ldap.Client as Ldap
@@ -31,12 +39,14 @@ import Ldap.Client as Ldap
 
 locally :: (Ldap -> IO a) -> IO (Either LdapError a)
 locally f =
-  bracket (do (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing
-                                  (Just [ ("PORT", show port)
-                                        , ("SSL_CERT", "./ssl/cert.pem")
-                                        , ("SSL_KEY", "./ssl/key.pem")
-                                        ])
+  bracket (do env <- getEnvironment
+              (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing
+                                  (Just (("PORT", show port) :
+                                         ("SSL_CERT", "./ssl/cert.pem") :
+                                         ("SSL_KEY", "./ssl/key.pem") :
+                                         env))
               hGetLine out
+              forkIO (() <$ tryIOError (forever (hGetLine out >>= putStrLn)))
               return h)
           (\h -> do terminateProcess h
                     waitForProcess h)
