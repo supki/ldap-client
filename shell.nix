@@ -4,8 +4,8 @@
     ps.hdevtools ps.doctest ps.hspec-discover ps.hlint ps.ghc-mod
   ]);
   cabal-install = pkgs.haskell.packages.${compiler}.cabal-install;
-  pkg = (import ./default.nix { inherit nixpkgs compiler; });
-  npm = (import ./npm {});
+  pkg = import ./default.nix { inherit nixpkgs compiler; };
+  npm = import ./npm {};
 in
   pkgs.stdenv.mkDerivation rec {
     name = pkg.pname;
