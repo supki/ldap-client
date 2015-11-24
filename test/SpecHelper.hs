@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module SpecHelper
   ( locally
@@ -22,6 +23,9 @@ module SpecHelper
   , oddish
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative ((<$))
+#endif
 import Control.Monad (forever)
 import Control.Concurrent (forkIO)
 import Control.Exception (bracket)
