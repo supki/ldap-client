@@ -37,8 +37,10 @@ import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
 import           Data.Typeable (Typeable)
 import           Network (PortNumber)
+import           Network.Connection (Connection(..))
 
 import qualified Ldap.Asn1.Type as Type
+import qualified Control.Concurrent.Async as Async
 
 
 -- | LDAP host.
@@ -53,7 +55,9 @@ data Host =
 data Ldap = Ldap
   { client  :: TQueue ClientMessage
   , counter :: TVar Type.Id
-  } deriving (Eq)
+  , conn    :: Connection
+  , threads :: [Async.Async ()]
+  }
 
 data ClientMessage = New Type.Id Request (TMVar (NonEmpty Type.ProtocolServerOp))
 type Request = Type.ProtocolClientOp

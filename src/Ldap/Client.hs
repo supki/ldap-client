@@ -18,6 +18,7 @@ module Ldap.Client
     -- * Bind
   , Password(..)
   , bind
+  , close
     -- * Search
   , search
   , SearchEntry(..)
@@ -25,6 +26,7 @@ module Ldap.Client
   , Search
   , Mod
   , Type.Scope(..)
+  , open
   , scope
   , size
   , time
@@ -65,7 +67,7 @@ import           Control.Concurrent.STM.TMVar (putTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, writeTQueue, readTQueue)
 import           Control.Concurrent.STM.TVar (newTVarIO)
 import           Control.Exception (Exception, Handler(..), bracket, throwIO, catch, catches)
-import           Control.Monad (forever)
+import           Control.Monad (forever, forM)
 import qualified Data.ASN1.BinaryEncoding as Asn1
 import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
@@ -116,10 +118,18 @@ import           Ldap.Client.Extended (Oid(..), extended)
 {-# ANN module "HLint: ignore Use first" #-}
 
 
-newLdap :: IO Ldap
-newLdap = Ldap
-  <$> newTQueueIO
-  <*> newTVarIO (Type.Id 0)
+newLdap :: Connection -> IO Ldap
+newLdap conn = do
+  inq  <- newTQueueIO
+  outq <- newTQueueIO
+  client <- newTQueueIO
+  as   <- traverse Async.async
+    [ input inq conn
+    , output outq conn
+    , dispatch client inq outq
+    ]
+  tvar  <- newTVarIO (Type.Id 0)
+  return $ Ldap client tvar conn as
 
 -- | Various failures that can happen when working with LDAP.
 data LdapError =
@@ -139,51 +149,56 @@ data Disconnect = Disconnect Type.ResultCode Dn Text
 
 instance Exception Disconnect
 
+open :: Host -> PortNumber -> IO Ldap
+open host port = do
+  context <- Conn.initConnectionContext
+  conn <- Conn.connectTo context (params host port)
+  l <- newLdap conn
+  return l
+
+close :: Ldap -> IO ()
+close l@(Ldap client v conn threads) = do
+  unbindAsync l
+  forM threads Async.cancel
+  Conn.connectionClose conn
+
 -- | The entrypoint into LDAP.
 --
 -- It catches all LDAP-related exceptions.
 with :: Host -> PortNumber -> (Ldap -> IO a) -> IO (Either LdapError a)
 with host port f = do
-  context <- Conn.initConnectionContext
-  bracket (Conn.connectTo context params) Conn.connectionClose (\conn ->
-    bracket newLdap unbindAsync (\l -> do
-      inq  <- newTQueueIO
-      outq <- newTQueueIO
-      as   <- traverse Async.async
-        [ input inq conn
-        , output outq conn
-        , dispatch l inq outq
-        , f l
-        ]
-      fmap (Right . snd) (Async.waitAnyCancel as)))
+  bracket (open host port) close (\l -> do
+    as   <- Async.async $ f l
+    fmap Right (Async.wait as))
  `catches`
   [ Handler (\(WrappedIOError e) -> return (Left (IOError e)))
   , Handler (return . Left . ParseError)
   , Handler (return . Left . ResponseError)
   ]
- where
-  params = Conn.ConnectionParams
-    { Conn.connectionHostname =
-        case host of
-          Plain    h -> h
-          Secure   h -> h
-          Insecure h -> h
-    , Conn.connectionPort = port
-    , Conn.connectionUseSecure =
-        case host of
-          Plain  _ -> Nothing
-          Secure _ -> Just Conn.TLSSettingsSimple
-            { Conn.settingDisableCertificateValidation = False
-            , Conn.settingDisableSession = False
-            , Conn.settingUseServerName = False
-            }
-          Insecure _ -> Just Conn.TLSSettingsSimple
-            { Conn.settingDisableCertificateValidation = True
-            , Conn.settingDisableSession = False
-            , Conn.settingUseServerName = False
-            }
-    , Conn.connectionUseSocks = Nothing
-    }
+
+params :: Host -> PortNumber -> Conn.ConnectionParams
+params host port = Conn.ConnectionParams
+  { Conn.connectionHostname =
+      case host of
+        Plain    h -> h
+        Secure   h -> h
+        Insecure h -> h
+  , Conn.connectionPort = port
+  , Conn.connectionUseSecure =
+      case host of
+        Plain  _ -> Nothing
+        Secure _ -> Just Conn.TLSSettingsSimple
+          { Conn.settingDisableCertificateValidation = False
+          , Conn.settingDisableSession = False
+          , Conn.settingUseServerName = False
+          }
+        Insecure _ -> Just Conn.TLSSettingsSimple
+          { Conn.settingDisableCertificateValidation = True
+          , Conn.settingDisableSession = False
+          , Conn.settingUseServerName = False
+          }
+  , Conn.connectionUseSocks = Nothing
+  }
 
 input :: FromAsn1 a => TQueue a -> Connection -> IO b
 input inq conn = wrap . flip fix [] $ \loop chunks -> do
@@ -211,11 +226,11 @@ output out conn = wrap . forever $ do
   Conn.connectionPut conn (ByteString.Lazy.toStrict (encode (toAsn1 mempty msg)))
 
 dispatch
-  :: Ldap
+  :: TQueue ClientMessage
   -> TQueue (Type.LdapMessage Type.ProtocolServerOp)
   -> TQueue (Type.LdapMessage Request)
   -> IO a
-dispatch Ldap { client } inq outq =
+dispatch client inq outq =
   flip fix Map.empty $ \loop !req ->
     loop =<< atomically (asum
       [ do New mid new var <- readTQueue client
