@@ -1,5 +1,5 @@
 name:                ldap-client
-version:             0.1.0
+version:             0.1.0.1
 synopsis:            Pure Haskell LDAP Client Library
 description:
   Pure Haskell LDAP client library implementing (the parts of) RFC 4511.
