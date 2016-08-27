@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7102" }: let
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc801" }: let
   ghc = nixpkgs.pkgs.haskell.packages.${compiler};
   npm = import ./npm {};
 in

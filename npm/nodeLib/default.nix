@@ -75,7 +75,7 @@ let
 in
 
 rec {
-  nodejs = pkgs."nodejs-${replaceDots "_" nodejsVersion}" or (
+  nodejs = pkgs.nodejs or (
     throw "The given nodejs version ${nodejsVersion} has not been defined."
   );
   buildNodePackage = import ./buildNodePackage.nix ({
