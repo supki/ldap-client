@@ -41,12 +41,12 @@ locally :: (Ldap -> IO a) -> IO (Either LdapError a)
 locally f =
   bracket (do env <- getEnvironment
               (_, out, _, h) <- runInteractiveProcess "./test/ldap.js" [] Nothing
-                                  (Just (("PORT", show port) :
+                                  (Just (("PORT", show (port :: Int)) :
                                          ("SSL_CERT", "./ssl/cert.pem") :
                                          ("SSL_KEY", "./ssl/key.pem") :
                                          env))
-              hGetLine out
-              forkIO (() <$ tryIOError (forever (hGetLine out >>= putStrLn)))
+              _ <- hGetLine out
+              _ <- forkIO (() <$ tryIOError (forever (hGetLine out >>= putStrLn)))
               return h)
           (\h -> do terminateProcess h
                     waitForProcess h)
