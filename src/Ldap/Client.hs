@@ -162,6 +162,7 @@ with host port f = do
         case host of
           Plain    h -> h
           Secure   h -> h
+          SecureWithTLSSettings h _ -> h
           Insecure h -> h
     , Conn.connectionPort = port
     , Conn.connectionUseSecure =
@@ -172,6 +173,7 @@ with host port f = do
             , Conn.settingDisableSession = False
             , Conn.settingUseServerName = False
             }
+          SecureWithTLSSettings _ t -> Just t
           Insecure _ -> Just Conn.TLSSettingsSimple
             { Conn.settingDisableCertificateValidation = True
             , Conn.settingDisableSession = False
