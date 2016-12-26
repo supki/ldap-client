@@ -36,6 +36,7 @@ import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
 import           Data.Typeable (Typeable)
 import           Network (PortNumber)
+import           Network.Connection (TLSSettings)
 
 import qualified Ldap.Asn1.Type as Type
 
@@ -46,7 +47,8 @@ data Host =
   | Insecure String -- ^ LDAP over TLS without the certificate validity check.
                     --   Only use for testing!
   | Secure String   -- ^ LDAP over TLS. Use!
-    deriving (Show, Eq, Ord)
+    | SecureWithTLSSettings String TLSSettings -- ^ LDAP over TLS with the ability to specify detailed TLS settings
+    deriving (Show)
 
 -- | A token. All functions that interact with the Directory require one.
 data Ldap = Ldap
