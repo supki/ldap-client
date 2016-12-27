@@ -173,7 +173,7 @@ with host port f = do
             , Conn.settingDisableSession = False
             , Conn.settingUseServerName = False
             }
-          SecureWithTLSSettings _ t -> Just t
+          SecureWithTLSSettings _ settings -> Just settings
           Insecure _ -> Just Conn.TLSSettingsSimple
             { Conn.settingDisableCertificateValidation = True
             , Conn.settingDisableSession = False
