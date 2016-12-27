@@ -4,15 +4,15 @@ sudo: false
 
 matrix:
   include:
-    - env: CABALVER=1.16 GHCVER=7.6.3
+    - env: CABALVER=1.16 GHCVER=7.6.3 RUN_TESTS=
       addons: {apt: {packages: [cabal-install-1.16,ghc-7.6.3], sources: [hvr-ghc]}}
-    - env: CABALVER=1.18 GHCVER=7.8.4
+    - env: CABALVER=1.18 GHCVER=7.8.4 RUN_TESTS=
       addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=7.10.3
+    - env: CABALVER=1.22 GHCVER=7.10.3 RUN_TESTS=--run-tests
       addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3],sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=8.0.1
+    - env: CABALVER=1.24 GHCVER=8.0.1 RUN_TESTS=--run-tests
       addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1],sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=head
+    - env: CABALVER=head GHCVER=head RUN_TESTS=--run-tests
       addons: {apt: {packages: [cabal-install-head,ghc-head],  sources: [hvr-ghc]}}
 
   allow_failures:
@@ -29,5 +29,5 @@ install:
   - npm install ldapjs
 
 script:
-  - cabal install --enable-tests ldap-client.cabal
+  - cabal install --enable-tests $RUN_TESTS ldap-client.cabal
   - cabal sdist && cabal install --enable-tests dist/ldap-client-*.tar.gz

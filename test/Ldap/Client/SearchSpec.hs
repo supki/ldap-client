@@ -47,7 +47,7 @@ spec = do
         (Ldap.ResponseErrorCode req
                                 Ldap.InsufficientAccessRights
                                 (Dn "o=localhost")
-                                "Insufficient Access Rights"))
+                                "InsufficientAccessRightsError"))
 
   it "‘present’ filter" $ do
     res <- locally $ \l -> do

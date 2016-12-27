@@ -30,7 +30,7 @@ spec = do
                                  (Ldap.Type.Simple "public"))
           Ldap.InvalidCredentials
           (Dn "cn=admin")
-          "Invalid Credentials"))
+          "InvalidCredentialsError"))
 
   it "binds as ‘pikachu’" $ do
     res <- locally $ \l -> do
