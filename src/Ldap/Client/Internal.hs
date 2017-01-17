@@ -42,6 +42,75 @@ import qualified Ldap.Asn1.Type as Type
 
 
 -- | LDAP host.
+--
+-- To use client-side certificates and a custom CA you could use something
+-- similar to this example
+--
+-- @
+-- import qualified Network.Connection as Conn
+-- import qualified Network.TLS as TLS
+-- import qualified Network.TLS.Extra.Cipher as TLS
+-- import qualified Data.X509 as X509
+-- import qualified Data.X509.CertificateStore as X509 (makeCertificateStore)
+-- import qualified Data.X509.File as X509 (readSignedObject, readKeyFile)
+-- import qualified Data.ByteString.Char8 as BSC8
+-- import qualified Ldap.Client as Ldap
+--
+-- ciphers :: [TLS.Cipher]
+-- ciphers =
+--     [ TLS.cipher_DHE_RSA_AES256_SHA256
+--     , TLS.cipher_DHE_RSA_AES128_SHA256
+--     , TLS.cipher_DHE_RSA_AES256_SHA1
+--     , TLS.cipher_DHE_RSA_AES128_SHA1
+--     , TLS.cipher_DHE_DSS_AES256_SHA1
+--     , TLS.cipher_DHE_DSS_AES128_SHA1
+--     , TLS.cipher_AES128_SHA1
+--     , TLS.cipher_AES256_SHA1
+--     , TLS.cipher_RC4_128_MD5
+--     , TLS.cipher_RC4_128_SHA1
+--     , TLS.cipher_RSA_3DES_EDE_CBC_SHA1
+--     , TLS.cipher_DHE_RSA_AES128GCM_SHA256
+--     , TLS.cipher_ECDHE_RSA_AES256GCM_SHA384
+--     , TLS.cipher_ECDHE_RSA_AES256CBC_SHA
+--     , TLS.cipher_ECDHE_RSA_AES128GCM_SHA256
+--     , TLS.cipher_ECDHE_ECDSA_AES128GCM_SHA256
+--     ]
+--
+-- initializeTLSSettings :: FilePath
+--                       -> FilePath
+--                       -> FilePath
+--                       -> IO Conn.TLSSettings
+-- initializeTLSSettings caCertPath clientCertPath clientCertKeyPath = do
+--   [clientCertificate] <- X509.readSignedObject clientCertPath
+--   [clientKey] <- X509.readKeyFile clientCertKeyPath
+--   caCertificates <- X509.readSignedObject caCertPath
+--   return $
+--     Conn.TLSSettings
+--       (TLS.defaultParamsClient "ldap.example.com" BSC8.empty)
+--         { TLS.clientShared =
+--             def { TLS.sharedCAStore = X509.makeCertificateStore caCertificates
+--                 }
+--         , TLS.clientHooks =
+--             def { TLS.onCertificateRequest = \_ ->
+--                     return $
+--                       Just ( X509.CertificateChain [clientCertificate]
+--                            , clientKey
+--                            )
+--                 }
+--         , TLS.clientSupported = def { TLS.supportedVersions = [TLS.TLS12]
+--                                     , TLS.supportedCiphers = ciphers
+--                                     }
+--         }
+--
+-- testConnection :: IO (Either Ldap.LdapError [Ldap.SearchEntry])
+--   tlsSettings <-
+--     initializeTLSSettings
+--       "ca.crt"
+--       "client.crt"
+--       "client.key"
+--   Ldap.with (Ldap.SecureWithTLSSettings "ldap.example.com" tlsSettings) 636 $ \ldap -> do
+--     Ldap.externalBind ldap (Ldap.Dn "") (Just "")
+-- @
 data Host =
     Plain String    -- ^ Plain LDAP.
   | Insecure String -- ^ LDAP over TLS without the certificate validity check.
