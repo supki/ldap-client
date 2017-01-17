@@ -19,8 +19,8 @@ import qualified Data.Text.Encoding as Text
 
 import           Ldap.Asn1.Type
 
-{-# ANN module "HLint: ignore Use const" #-}
-{-# ANN module "HLint: ignore Avoid lambda" #-}
+{-# ANN module ("HLint: ignore Use const" :: String) #-}
+{-# ANN module ("HLint: ignore Avoid lambda" :: String) #-}
 
 
 -- | Convert a part of ASN.1 stream to a LDAP type returning the remainder of the stream.

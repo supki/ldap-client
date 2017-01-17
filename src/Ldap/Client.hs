@@ -109,7 +109,7 @@ import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
 import           Ldap.Client.Extended (Oid(..), extended)
 
-{-# ANN module "HLint: ignore Use first" #-}
+{-# ANN module ("HLint: ignore Use first" :: String) #-}
 
 
 newLdap :: IO Ldap
