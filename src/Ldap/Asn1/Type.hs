@@ -48,7 +48,14 @@ data ProtocolServerOp =
     deriving (Show, Eq)
 
 -- | Not really a choice until SASL is supported.
-newtype AuthenticationChoice = Simple ByteString
+data AuthenticationChoice =
+    Simple ByteString
+  | Sasl !SaslMechanism !(Maybe Text)
+    deriving (Show, Eq)
+
+-- | SASL Mechanism, for now only SASL EXTERNAL is supported
+data SaslMechanism =
+    External
     deriving (Show, Eq)
 
 -- | Scope of the search to be performed.

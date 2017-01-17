@@ -17,6 +17,10 @@ module Ldap.Client.Bind
   , bindEither
   , bindAsync
   , bindAsyncSTM
+  , externalBind
+  , externalBindEither
+  , externalBindAsync
+  , externalBindAsyncSTM
   , Async
   , wait
   , waitSTM
@@ -24,6 +28,7 @@ module Ldap.Client.Bind
 
 import           Control.Monad.STM (STM, atomically)
 import           Data.ByteString (ByteString)
+import           Data.Text (Text)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 
 import qualified Ldap.Asn1.Type as Type
@@ -73,3 +78,37 @@ bindResult req (Type.BindResponse (Type.LdapResult code (Type.LdapDn (Type.LdapS
   | Type.Success <- code = Right ()
   | otherwise = Left (ResponseErrorCode req code (Dn dn) msg)
 bindResult req res = Left (ResponseInvalid req res)
+
+-- | Perform a SASL EXTERNAL Bind operation synchronously. Raises 'ResponseError' on failures.
+externalBind :: Ldap -> Dn -> Maybe Text -> IO ()
+externalBind l username mCredentials =
+  raise =<< externalBindEither l username mCredentials
+
+-- | Perform a SASL EXTERNAL Bind operation synchronously. Returns @Left e@ where
+-- @e@ is a 'ResponseError' on failures.
+externalBindEither :: Ldap -> Dn -> Maybe Text -> IO (Either ResponseError ())
+externalBindEither l username mCredentials =
+  wait =<< externalBindAsync l username mCredentials
+
+-- | Perform the SASL EXTERNAL Bind operation asynchronously. Call 'Ldap.Client.wait' to wait
+-- for its completion.
+externalBindAsync :: Ldap -> Dn -> Maybe Text -> IO (Async ())
+externalBindAsync l username mCredentials =
+  atomically (externalBindAsyncSTM l username mCredentials)
+
+-- | Perform the SASL EXTERNAL Bind operation asynchronously.
+--
+-- Don't wait for its completion (with 'Ldap.Client.waitSTM') in the
+-- same transaction you've performed it in.
+externalBindAsyncSTM :: Ldap -> Dn -> Maybe Text -> STM (Async ())
+externalBindAsyncSTM l username mCredentials =
+  let req = externalBindRequest username mCredentials in sendRequest l (bindResult req) req
+
+externalBindRequest :: Dn -> Maybe Text -> Request
+externalBindRequest (Dn username) mCredentials =
+  Type.BindRequest ldapVersion
+                   (Type.LdapDn (Type.LdapString username))
+                   (Type.Sasl Type.External mCredentials)
+ where
+  ldapVersion = 3
+

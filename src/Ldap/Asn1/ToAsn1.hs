@@ -15,6 +15,7 @@ import           Data.Foldable (fold, foldMap)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Maybe (maybe)
 import           Data.Monoid (Endo(Endo), (<>), mempty)
+import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Prelude (Integer, (.), fromIntegral)
 
@@ -309,12 +310,22 @@ instance ToAsn1 ProtocolClientOp where
 @
 AuthenticationChoice ::= CHOICE {
      simple                  [0] OCTET STRING,
+     sasl                    [3] SaslCredentials,
      ...  }
+
+
+SaslCredentials ::= SEQUENCE {
+     mechanism               LDAPString,
+     credentials             OCTET STRING OPTIONAL }
 @
 -}
 instance ToAsn1 AuthenticationChoice where
   toAsn1 (Simple s) = other Asn1.Context 0 s
-
+  toAsn1 (Sasl External c) =
+    context 3 (fold
+      [ toAsn1 (LdapString (Text.pack "EXTERNAL"))
+      , maybe mempty (toAsn1 . LdapString) c
+      ])
 {- |
 @
 AttributeSelection ::= SEQUENCE OF selector LDAPString

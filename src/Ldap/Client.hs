@@ -18,6 +18,7 @@ module Ldap.Client
     -- * Bind
   , Password(..)
   , bind
+  , externalBind
     -- * Search
   , search
   , SearchEntry(..)
@@ -90,7 +91,7 @@ import           Ldap.Asn1.ToAsn1 (ToAsn1(toAsn1))
 import           Ldap.Asn1.FromAsn1 (FromAsn1, parseAsn1)
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
-import           Ldap.Client.Bind (Password(..), bind)
+import           Ldap.Client.Bind (Password(..), bind, externalBind)
 import           Ldap.Client.Search
   ( search
   , Search
