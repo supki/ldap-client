@@ -18,7 +18,7 @@ matrix:
   allow_failures:
     - env: CABALVER=1.16 GHCVER=7.6.3 # weird spec problems
     - env: CABALVER=1.18 GHCVER=7.8.4 # weird spec problems
-    - env: CABALVER=head GHCVER=head
+    - env: CABALVER=head GHCVER=head RUN_TESTS=--run-tests
 
 before_install:
   - export PATH=$HOME/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
