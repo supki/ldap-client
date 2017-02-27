@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | This module contains convertions from LDAP types to ASN.1.
 --
 -- Various hacks are employed because "asn1-encoding" only encodes to DER, but
@@ -15,7 +16,6 @@ import           Data.Foldable (fold, foldMap)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Maybe (maybe)
 import           Data.Monoid (Endo(Endo), (<>), mempty)
-import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Prelude (Integer, (.), fromIntegral)
 
@@ -323,7 +323,7 @@ instance ToAsn1 AuthenticationChoice where
   toAsn1 (Simple s) = other Asn1.Context 0 s
   toAsn1 (Sasl External c) =
     context 3 (fold
-      [ toAsn1 (LdapString (Text.pack "EXTERNAL"))
+      [ toAsn1 (LdapString "EXTERNAL")
       , maybe mempty (toAsn1 . LdapString) c
       ])
 {- |

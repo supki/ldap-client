@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | <https://tools.ietf.org/html/rfc4511#section-4.12 Extended> operation.
 --
 -- This operation comes in four flavours:
@@ -18,11 +19,14 @@ module Ldap.Client.Extended
   , extendedEither
   , extendedAsync
   , extendedAsyncSTM
-    -- ** StartTLS Operation
+    -- * StartTLS Operation
   , startTls
   , startTlsEither
   , startTlsAsync
   , startTlsAsyncSTM
+    -- * OIDs
+  , noticeOfDisconnectionOid
+  , startTlsOid
   , Async
   , wait
   , waitSTM
@@ -32,7 +36,7 @@ import           Control.Monad ((<=<))
 import           Control.Monad.STM (STM, atomically)
 import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty((:|)))
-import           Data.String (fromString)
+import           Data.String (IsString(fromString))
 import           Data.Text (Text)
 
 import qualified Ldap.Asn1.Type as Type
@@ -42,6 +46,10 @@ import           Ldap.Client.Internal
 -- | Globally unique LDAP object identifier.
 newtype Oid = Oid Text
     deriving (Show, Eq)
+
+instance IsString Oid where
+  fromString =
+    Oid . fromString
 
 -- | Perform the Extended operation synchronously. Raises 'ResponseError' on failures.
 extended :: Ldap -> Oid -> Maybe ByteString -> IO ()
@@ -99,5 +107,10 @@ startTlsAsync =
 -- | An example of @Extended Operation@, cf. 'extendedAsyncSTM'.
 startTlsAsyncSTM :: Ldap -> STM (Async ())
 startTlsAsyncSTM l =
-  extendedAsyncSTM l (Oid (fromString "1.3.6.1.4.1.1466.20037"))
-                     Nothing
+  extendedAsyncSTM l startTlsOid Nothing
+
+noticeOfDisconnectionOid :: Oid
+noticeOfDisconnectionOid = "1.3.6.1.4.1.1466.20036"
+
+startTlsOid :: Oid
+startTlsOid = "1.3.6.1.4.1.1466.20037"

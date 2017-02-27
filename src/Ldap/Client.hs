@@ -78,7 +78,6 @@ import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
 import           Data.Monoid (Endo(appEndo))
-import           Data.String (fromString)
 import           Data.Text (Text)
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Traversable (traverse)
@@ -110,7 +109,7 @@ import           Ldap.Client.Modify (Operation(..), modify, RelativeDn(..), modi
 import           Ldap.Client.Add (add)
 import           Ldap.Client.Delete (delete)
 import           Ldap.Client.Compare (compare)
-import           Ldap.Client.Extended (Oid(..), extended)
+import           Ldap.Client.Extended (Oid(..), extended, noticeOfDisconnectionOid)
 
 {-# ANN module ("HLint: ignore Use first" :: String) #-}
 
@@ -262,12 +261,9 @@ dispatch Ldap { client } inq outq =
                      req =
     case moid of
       Just (Type.LdapOid oid)
-        | oid == noticeOfDisconnection -> throwSTM (Disconnect code (Dn dn) reason)
+        | Oid oid == noticeOfDisconnectionOid -> throwSTM (Disconnect code (Dn dn) reason)
       _ -> return req
   probablyDisconnect mid op req = done mid op req
-
-  noticeOfDisconnection :: Text
-  noticeOfDisconnection = fromString "1.3.6.1.4.1.1466.20036"
 
 wrap :: IO a -> IO a
 wrap m = m `catch` (throwIO . WrappedIOError)
