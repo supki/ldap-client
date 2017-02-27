@@ -53,7 +53,7 @@ locally f =
           (\_ -> Ldap.with localhost port f)
 
 localhost :: Host
-localhost = Insecure "localhost"
+localhost = Tls "localhost" insecureTlsSettings
 
 port :: Num a => a
 port = 24620

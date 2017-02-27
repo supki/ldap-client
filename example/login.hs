@@ -55,7 +55,7 @@ main = do
 
 login :: Conf -> IO (Either LdapError ())
 login conf =
-  Ldap.with (Ldap.Secure (host conf)) (port conf) $ \l -> do
+  Ldap.with (Ldap.Tls (host conf) Ldap.defaultTlsSettings) (port conf) $ \l -> do
     Ldap.bind l (dn conf) (password conf)
     fix $ \loop -> do
       uid <- prompt "Username: "

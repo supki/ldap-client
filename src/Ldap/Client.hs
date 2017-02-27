@@ -10,6 +10,8 @@
 module Ldap.Client
   ( with
   , Host(..)
+  , defaultTlsSettings
+  , insecureTlsSettings
   , PortNumber
   , Ldap
   , LdapError(..)
@@ -161,27 +163,29 @@ with host port f = do
   params = Conn.ConnectionParams
     { Conn.connectionHostname =
         case host of
-          Plain    h -> h
-          Secure   h -> h
-          SecureWithTLSSettings h _ -> h
-          Insecure h -> h
+          Plain h -> h
+          Tls   h _ -> h
     , Conn.connectionPort = port
     , Conn.connectionUseSecure =
         case host of
           Plain  _ -> Nothing
-          Secure _ -> Just Conn.TLSSettingsSimple
-            { Conn.settingDisableCertificateValidation = False
-            , Conn.settingDisableSession = False
-            , Conn.settingUseServerName = False
-            }
-          SecureWithTLSSettings _ settings -> Just settings
-          Insecure _ -> Just Conn.TLSSettingsSimple
-            { Conn.settingDisableCertificateValidation = True
-            , Conn.settingDisableSession = False
-            , Conn.settingUseServerName = False
-            }
+          Tls _ settings -> pure settings
     , Conn.connectionUseSocks = Nothing
     }
+
+defaultTlsSettings :: Conn.TLSSettings
+defaultTlsSettings = Conn.TLSSettingsSimple
+  { Conn.settingDisableCertificateValidation = False
+  , Conn.settingDisableSession = False
+  , Conn.settingUseServerName = False
+  }
+
+insecureTlsSettings :: Conn.TLSSettings
+insecureTlsSettings = Conn.TLSSettingsSimple
+  { Conn.settingDisableCertificateValidation = True
+  , Conn.settingDisableSession = False
+  , Conn.settingUseServerName = False
+  }
 
 input :: FromAsn1 a => TQueue a -> Connection -> IO b
 input inq conn = wrap . flip fix [] $ \loop chunks -> do

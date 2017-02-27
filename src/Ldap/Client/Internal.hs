@@ -43,11 +43,8 @@ import qualified Ldap.Asn1.Type as Type
 
 -- | LDAP host.
 data Host =
-    Plain String    -- ^ Plain LDAP.
-  | Insecure String -- ^ LDAP over TLS without the certificate validity check.
-  | Secure String   -- ^ LDAP over TLS.
-  | SecureWithTLSSettings String TLSSettings
-                    -- ^ LDAP over TLS with the ability to specify detailed TLS settings.
+    Plain String           -- ^ Plain LDAP.
+  | Tls String TLSSettings -- ^ LDAP over TLS.
     deriving (Show)
 
 -- | A token. All functions that interact with the Directory require one.
