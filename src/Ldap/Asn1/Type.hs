@@ -37,7 +37,7 @@ data ProtocolServerOp =
     BindResponse !LdapResult !(Maybe ByteString)
   | SearchResultEntry !LdapDn !PartialAttributeList
   | SearchResultReference !(NonEmpty Uri)
-  | SearchResultDone !(LdapResult)
+  | SearchResultDone !LdapResult
   | ModifyResponse !LdapResult
   | AddResponse !LdapResult
   | DeleteResponse !LdapResult
@@ -49,7 +49,7 @@ data ProtocolServerOp =
 
 -- | Not really a choice until SASL is supported.
 data AuthenticationChoice =
-    Simple ByteString
+    Simple !ByteString
   | Sasl !SaslMechanism !(Maybe Text)
     deriving (Show, Eq)
 
@@ -77,16 +77,16 @@ data DerefAliases =
 
 -- | Conditions that must be fulfilled in order for the Search to match a given entry.
 data Filter =
-    And !(NonEmpty Filter)                 -- ^ All filters evaluate to @TRUE@
-  | Or !(NonEmpty Filter)                  -- ^ Any filter evaluates to @TRUE@
-  | Not Filter                             -- ^ Filter evaluates to @FALSE@
-  | EqualityMatch AttributeValueAssertion  -- ^ @EQUALITY@ rule returns @TRUE@
-  | Substrings SubstringFilter             -- ^ @SUBSTR@ rule returns @TRUE@
-  | GreaterOrEqual AttributeValueAssertion -- ^ @ORDERING@ rule returns @FALSE@
-  | LessOrEqual AttributeValueAssertion    -- ^ @ORDERING@ or @EQUALITY@ rule returns @TRUE@
-  | Present AttributeDescription           -- ^ Attribute is present in the entry
-  | ApproxMatch AttributeValueAssertion    -- ^ Same as 'EqualityMatch' for most servers
-  | ExtensibleMatch MatchingRuleAssertion
+    And !(NonEmpty Filter)                  -- ^ All filters evaluate to @TRUE@
+  | Or !(NonEmpty Filter)                   -- ^ Any filter evaluates to @TRUE@
+  | Not !Filter                             -- ^ Filter evaluates to @FALSE@
+  | EqualityMatch !AttributeValueAssertion  -- ^ @EQUALITY@ rule returns @TRUE@
+  | Substrings !SubstringFilter             -- ^ @SUBSTR@ rule returns @TRUE@
+  | GreaterOrEqual !AttributeValueAssertion -- ^ @ORDERING@ rule returns @FALSE@
+  | LessOrEqual !AttributeValueAssertion    -- ^ @ORDERING@ or @EQUALITY@ rule returns @TRUE@
+  | Present !AttributeDescription           -- ^ Attribute is present in the entry
+  | ApproxMatch !AttributeValueAssertion    -- ^ Same as 'EqualityMatch' for most servers
+  | ExtensibleMatch !MatchingRuleAssertion
     deriving (Show, Eq)
 
 data SubstringFilter = SubstringFilter !AttributeDescription !(NonEmpty Substring)

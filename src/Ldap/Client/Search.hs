@@ -215,7 +215,7 @@ data Filter =
   | !Attr :~= !AttrValue    -- ^ Attribute's value approximately matches the assertion
   | !Attr :=* !(Maybe AttrValue, [AttrValue], Maybe AttrValue)
                             -- ^ Glob match
-  | (Maybe Attr, Maybe Attr, Bool) ::= AttrValue
+  | !(Maybe Attr, Maybe Attr, Bool) ::= !AttrValue
                             -- ^ Extensible match
 
 -- | Entry found during the Search.

@@ -51,17 +51,17 @@ data Host =
     deriving (Show)
 
 -- | A token. All functions that interact with the Directory require one.
-data Ldap = Ldap
+newtype Ldap = Ldap
   { client  :: TQueue ClientMessage
   } deriving (Eq)
 
-data ClientMessage = New Request (TMVar (NonEmpty Type.ProtocolServerOp))
+data ClientMessage = New !Request !(TMVar (NonEmpty Type.ProtocolServerOp))
 type Request = Type.ProtocolClientOp
 type InMessage = Type.ProtocolServerOp
 type Response = NonEmpty InMessage
 
 -- | Asynchronous LDAP operation. Use 'wait' or 'waitSTM' to wait for its completion.
-data Async a = Async (STM (Either ResponseError a))
+newtype Async a = Async (STM (Either ResponseError a))
 
 instance Functor Async where
   fmap f (Async stm) = Async (fmap (fmap f) stm)
@@ -72,8 +72,8 @@ newtype Dn = Dn Text
 
 -- | Response indicates a failed operation.
 data ResponseError =
-    ResponseInvalid Request Response -- ^ LDAP server did not follow the protocol, so @ldap-client@ couldn't make sense of the response.
-  | ResponseErrorCode Request Type.ResultCode Dn Text -- ^ The response contains a result code indicating failure and an error message.
+    ResponseInvalid !Request !Response -- ^ LDAP server did not follow the protocol, so @ldap-client@ couldn't make sense of the response.
+  | ResponseErrorCode !Request !Type.ResultCode !Dn !Text -- ^ The response contains a result code indicating failure and an error message.
     deriving (Show, Eq, Typeable)
 
 instance Exception ResponseError

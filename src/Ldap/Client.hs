@@ -119,10 +119,10 @@ newLdap = Ldap
 
 -- | Various failures that can happen when working with LDAP.
 data LdapError =
-    IOError IOError             -- ^ Network failure.
-  | ParseError Asn1.ASN1Error   -- ^ Invalid ASN.1 data received from the server.
-  | ResponseError ResponseError -- ^ An LDAP operation failed.
-  | DisconnectError Disconnect  -- ^ Notice of Disconnection has been received.
+    IOError !IOError             -- ^ Network failure.
+  | ParseError !Asn1.ASN1Error   -- ^ Invalid ASN.1 data received from the server.
+  | ResponseError !ResponseError -- ^ An LDAP operation failed.
+  | DisconnectError !Disconnect  -- ^ Notice of Disconnection has been received.
     deriving (Show, Eq)
 
 newtype WrappedIOError = WrappedIOError IOError
@@ -130,7 +130,7 @@ newtype WrappedIOError = WrappedIOError IOError
 
 instance Exception WrappedIOError
 
-data Disconnect = Disconnect Type.ResultCode Dn Text
+data Disconnect = Disconnect !Type.ResultCode !Dn !Text
     deriving (Show, Eq, Typeable)
 
 instance Exception Disconnect

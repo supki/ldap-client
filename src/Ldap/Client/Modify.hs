@@ -40,9 +40,9 @@ import           Ldap.Client.Internal
 
 -- | Type of modification being performed.
 data Operation =
-    Delete Attr [AttrValue] -- ^ Delete values from the attribute. Deletes the attribute if the list is empty or all current values are listed.
-  | Add Attr [AttrValue] -- ^ Add values to the attribute, creating it if necessary.
-  | Replace Attr [AttrValue] -- ^ Replace all existing values of the attribute with the new list. Deletes the attribute if the list is empty.
+    Delete !Attr ![AttrValue]  -- ^ Delete values from the attribute. Deletes the attribute if the list is empty or all current values are listed.
+  | Add !Attr ![AttrValue]     -- ^ Add values to the attribute, creating it if necessary.
+  | Replace !Attr ![AttrValue] -- ^ Replace all existing values of the attribute with the new list. Deletes the attribute if the list is empty.
     deriving (Show, Eq)
 
 -- | Perform the Modify operation synchronously. Raises 'ResponseError' on failures.
