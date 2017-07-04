@@ -193,7 +193,7 @@ input inq conn = wrap . flip fix [] $ \loop chunks -> do
     0 -> throwIO (IO.mkIOError IO.eofErrorType "Ldap.Client.input" Nothing Nothing)
     _ -> do
       let chunks' = chunk : chunks
-      case Asn1.decodeASN1 Asn1.DER (ByteString.Lazy.fromChunks (reverse chunks')) of
+      case Asn1.decodeASN1 Asn1.BER (ByteString.Lazy.fromChunks (reverse chunks')) of
         Left  Asn1.ParsingPartial
                    -> loop chunks'
         Left  e    -> throwIO e
