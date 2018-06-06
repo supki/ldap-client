@@ -31,7 +31,7 @@ import qualified System.IO as IO              -- base
 
 data Conf = Conf
   { host     :: String
-  , port     :: PortNumber
+  , port     :: Int
   , dn       :: Dn
   , password :: Password
   , base     :: Dn

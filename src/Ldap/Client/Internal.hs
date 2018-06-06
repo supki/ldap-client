@@ -16,7 +16,7 @@ module Ldap.Client.Internal
   , Response
   , ResponseError(..)
   , Request
-  , raise
+  , eitherToIO
   , sendRequest
   , Dn(..)
   , Attr(..)
@@ -27,6 +27,7 @@ module Ldap.Client.Internal
   , unbindAsyncSTM
   ) where
 
+import qualified Control.Concurrent.Async as Async (Async)
 import           Control.Concurrent.STM (STM, atomically)
 import           Control.Concurrent.STM.TMVar (TMVar, newEmptyTMVar, readTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, writeTQueue)
@@ -41,7 +42,8 @@ import           Network.Socket (PortNumber)
 #else
 import           Network (PortNumber)
 #endif
-import           Network.Connection (TLSSettings)
+import           Network.Connection (TLSSettings, Connection)
+import           Data.Void (Void)
 
 import qualified Ldap.Asn1.Type as Type
 
@@ -52,10 +54,12 @@ data Host =
   | Tls String TLSSettings -- ^ LDAP over TLS.
     deriving (Show)
 
--- | A token. All functions that interact with the Directory require one.
-newtype Ldap = Ldap
-  { client  :: TQueue ClientMessage
-  } deriving (Eq)
+-- | An LDAP connection handle
+data Ldap = Ldap
+  { reqQ    :: !(TQueue ClientMessage) -- ^ Request queue for client messages to be send.
+  , workers :: !(Async.Async Void) -- ^ Workers group for communicating with the server.
+  , conn    :: !Connection -- ^ Network connection to the server.
+  }
 
 data ClientMessage = New !Request !(TMVar (NonEmpty Type.ProtocolServerOp))
 type Request = Type.ProtocolClientOp
@@ -116,11 +120,10 @@ sendRequest l p msg =
      return (Async (fmap p (readTMVar var)))
 
 writeRequest :: Ldap -> TMVar Response -> Request -> STM ()
-writeRequest Ldap { client } var msg = writeTQueue client (New msg var)
+writeRequest Ldap { reqQ } var msg = writeTQueue reqQ (New msg var)
 
-raise :: Exception e => Either e a -> IO a
-raise = either throwIO return
-
+eitherToIO :: Exception e => Either e a -> IO a
+eitherToIO = either throwIO pure
 
 -- | Terminate the connection to the Directory.
 --
