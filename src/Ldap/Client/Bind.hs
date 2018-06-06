@@ -42,7 +42,7 @@ newtype Password = Password ByteString
 -- | Perform the Bind operation synchronously. Raises 'ResponseError' on failures.
 bind :: Ldap -> Dn -> Password -> IO ()
 bind l username password =
-  raise =<< bindEither l username password
+  eitherToIO =<< bindEither l username password
 
 -- | Perform the Bind operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
@@ -82,7 +82,7 @@ bindResult req res = Left (ResponseInvalid req res)
 -- | Perform a SASL EXTERNAL Bind operation synchronously. Raises 'ResponseError' on failures.
 externalBind :: Ldap -> Dn -> Maybe Text -> IO ()
 externalBind l username mCredentials =
-  raise =<< externalBindEither l username mCredentials
+  eitherToIO =<< externalBindEither l username mCredentials
 
 -- | Perform a SASL EXTERNAL Bind operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.

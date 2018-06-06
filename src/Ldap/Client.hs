@@ -2,6 +2,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | This module is intended to be imported qualified
 --
 -- @
@@ -9,6 +11,11 @@
 -- @
 module Ldap.Client
   ( with
+  , with'
+  , runsIn
+  , runsInEither
+  , open
+  , close
   , Host(..)
   , defaultTlsSettings
   , insecureTlsSettings
@@ -66,8 +73,9 @@ import qualified Control.Concurrent.Async as Async
 import           Control.Concurrent.STM (atomically, throwSTM)
 import           Control.Concurrent.STM.TMVar (putTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, writeTQueue, readTQueue)
-import           Control.Exception (Exception, Handler(..), bracket, throwIO, catch, catches)
+import           Control.Exception (Exception, bracket, throwIO, SomeException, fromException)
 import           Control.Monad (forever)
+import           Data.Void (Void)
 import qualified Data.ASN1.BinaryEncoding as Asn1
 import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
@@ -77,6 +85,7 @@ import           Data.Foldable (asum)
 import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid (Endo(appEndo))
 import           Data.Text (Text)
 #if __GLASGOW_HASKELL__ < 710
@@ -114,50 +123,88 @@ import           Ldap.Client.Extended (Oid(..), extended, noticeOfDisconnectionO
 {-# ANN module ("HLint: ignore Use first" :: String) #-}
 
 
-newLdap :: IO Ldap
-newLdap = Ldap
-  <$> newTQueueIO
-
 -- | Various failures that can happen when working with LDAP.
-data LdapError =
-    IOError !IOError             -- ^ Network failure.
+data LdapError
+  = WorkerError !SomeException   -- ^ Network failure.
   | ParseError !Asn1.ASN1Error   -- ^ Invalid ASN.1 data received from the server.
   | ResponseError !ResponseError -- ^ An LDAP operation failed.
   | DisconnectError !Disconnect  -- ^ Notice of Disconnection has been received.
-    deriving (Show, Eq)
+    deriving Show
 
-newtype WrappedIOError = WrappedIOError IOError
-    deriving (Show, Eq, Typeable)
-
-instance Exception WrappedIOError
+instance Exception LdapError
 
 data Disconnect = Disconnect !Type.ResultCode !Dn !Text
-    deriving (Show, Eq, Typeable)
+    deriving (Show, Typeable)
 
 instance Exception Disconnect
 
+newtype LdapH = LdapH Ldap
+
+-- | Provide a 'LdapH' to a function needing an 'Ldap' handle.
+runsIn :: (Ldap -> IO a)
+        -> Ldap
+        -> IO a
+runsIn act ldap@Ldap{workers} = do
+  actor <- Async.async (act ldap)
+  r <- Async.waitEitherCatch workers actor
+  case r of
+    Left (Right _a) -> error "Unreachable"
+    Left (Left e)   -> throwIO (repackEx e)
+    Right (Right r') -> pure r'
+    Right (Left e)  -> throwIO e
+
+runsInEither :: (Ldap -> IO a)
+             -> LdapH
+             -> IO (Either LdapError a)
+runsInEither act (LdapH ldap) = do
+  actor <- Async.async (act ldap)
+  r <- Async.waitEitherCatch workers actor
+  case r of
+    Left (Right _a) -> error "Unreachable"
+    Left (Left e)   -> pure (Left (repackEx e))
+    Right (Right r') -> pure (Right r')
+    Right (Left e)  -> throwIO e
+
+repackEx :: SomeException -> LdapError
+repackEx e = fromMaybe (WorkerError e) (fromException e)
+
 -- | The entrypoint into LDAP.
---
--- It catches all LDAP-related exceptions.
+with' :: Host -> PortNumber -> (Ldap -> IO a) -> IO a
+with' host port act = bracket (open host port) close (runsIn act)
+
+-- | The entrypoint into LDAP.
 with :: Host -> PortNumber -> (Ldap -> IO a) -> IO (Either LdapError a)
-with host port f = do
+with host port act = bracket (open host port) close (runsInEither act)
+
+-- | Creates an LDAP handle. This action is useful for creating your own resource
+-- management, such as with 'resource-pool'. The handle must be manually closed
+-- with 'close'.
+--
+-- If you use this low-level primitive, the handle should be provided to a function
+-- '(Ldap -> IO a)' using 'runsIn' or 'runsInEither', otherwise errors from the
+-- workers will not propagate to the main thread.
+open :: Host -> PortNumber -> IO (Ldap)
+open host port = do
   context <- Conn.initConnectionContext
-  bracket (Conn.connectTo context params) Conn.connectionClose (\conn ->
-    bracket newLdap unbindAsync (\l -> do
-      inq  <- newTQueueIO
-      outq <- newTQueueIO
-      as   <- traverse Async.async
-        [ input inq conn
-        , output outq conn
-        , dispatch l inq outq
-        , f l
-        ]
-      fmap (Right . snd) (Async.waitAnyCancel as)))
- `catches`
-  [ Handler (\(WrappedIOError e) -> return (Left (IOError e)))
-  , Handler (return . Left . ParseError)
-  , Handler (return . Left . ResponseError)
-  ]
+  conn <- Conn.connectTo context params
+  reqQ <- newTQueueIO
+  inQ  <- newTQueueIO
+  outQ <- newTQueueIO
+
+  -- The input worker that reads data off the network.
+  (inW :: Async.Async Void)   <- Async.async (input inQ conn)
+
+  -- The output worker that sends data onto the network.
+  (outW :: Async.Async Void)  <- Async.async (output outQ conn)
+
+  -- The dispatch worker that sends data between the three queues.
+  (dispW :: Async.Async Void) <- Async.async (dispatch reqQ inQ outQ)
+
+  -- We use this to propagate exceptions between the workers. The `workers` Async is just a tool to
+  -- exchange exceptions between the entire worker group and another thread.
+  workers <- Async.async (snd <$> Async.waitAnyCancel [inW, outW, dispW])
+
+  pure (Ldap reqQ workers conn)
  where
   params = Conn.ConnectionParams
     { Conn.connectionHostname =
@@ -171,6 +218,14 @@ with host port f = do
           Tls _ settings -> pure settings
     , Conn.connectionUseSocks = Nothing
     }
+
+-- | Closes an LDAP connection.
+-- This is to be used in together with 'open'.
+close :: Ldap -> IO ()
+close ldap@(Ldap _token workers conn) = do
+  unbindAsync ldap
+  Conn.connectionClose conn
+  Async.cancel workers
 
 defaultTlsSettings :: Conn.TLSSettings
 defaultTlsSettings = Conn.TLSSettingsSimple
@@ -186,84 +241,85 @@ insecureTlsSettings = Conn.TLSSettingsSimple
   , Conn.settingUseServerName = False
   }
 
+-- | Reads Asn1 BER encoded chunks off a connection into a TQueue.
 input :: FromAsn1 a => TQueue a -> Connection -> IO b
-input inq conn = wrap . flip fix [] $ \loop chunks -> do
-  chunk <- Conn.connectionGet conn 8192
-  case ByteString.length chunk of
-    0 -> throwIO (IO.mkIOError IO.eofErrorType "Ldap.Client.input" Nothing Nothing)
-    _ -> do
-      let chunks' = chunk : chunks
-      case Asn1.decodeASN1 Asn1.BER (ByteString.Lazy.fromChunks (reverse chunks')) of
-        Left  Asn1.ParsingPartial
-                   -> loop chunks'
-        Left  e    -> throwIO e
-        Right asn1 -> do
-          flip fix asn1 $ \loop' asn1' ->
-            case parseAsn1 asn1' of
-              Nothing -> return ()
-              Just (asn1'', a) -> do
-                atomically (writeTQueue inq a)
-                loop' asn1''
-          loop []
+input inq conn = loop []
+  where
+    loop chunks = do
+      chunk <- Conn.connectionGet conn 8192
+      case ByteString.length chunk of
+        0 -> throwIO (IO.mkIOError IO.eofErrorType "Ldap.Client.input" Nothing Nothing)
+        _ -> do
+          let chunks' = chunk : chunks
+          case Asn1.decodeASN1 Asn1.BER (ByteString.Lazy.fromChunks (reverse chunks')) of
+            Left  Asn1.ParsingPartial
+                      -> loop chunks'
+            Left  e    -> throwIO e
+            Right asn1 -> do
+              flip fix asn1 $ \loop' asn1' ->
+                case parseAsn1 asn1' of
+                  Nothing -> return ()
+                  Just (asn1'', a) -> do
+                    atomically (writeTQueue inq a)
+                    loop' asn1''
+              loop []
 
+-- | Transmits Asn1 DER encoded data from a TQueue into a Connection.
 output :: ToAsn1 a => TQueue a -> Connection -> IO b
-output out conn = wrap . forever $ do
+output out conn = forever $ do
   msg <- atomically (readTQueue out)
   Conn.connectionPut conn (encode (toAsn1 msg))
  where
   encode x = Asn1.encodeASN1' Asn1.DER (appEndo x [])
 
 dispatch
-  :: Ldap
+  :: TQueue ClientMessage
   -> TQueue (Type.LdapMessage Type.ProtocolServerOp)
   -> TQueue (Type.LdapMessage Request)
   -> IO a
-dispatch Ldap { client } inq outq =
-  flip fix (Map.empty, 1) $ \loop (!req, !counter) ->
-    loop =<< atomically (asum
-      [ do New new var <- readTQueue client
-           writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
-           return (Map.insert (Type.Id counter) ([], var) req, counter + 1)
-      , do Type.LdapMessage mid op _
-               <- readTQueue inq
-           res <- case op of
-             Type.BindResponse {}          -> done mid op req
-             Type.SearchResultEntry {}     -> saveUp mid op req
-             Type.SearchResultReference {} -> return req
-             Type.SearchResultDone {}      -> done mid op req
-             Type.ModifyResponse {}        -> done mid op req
-             Type.AddResponse {}           -> done mid op req
-             Type.DeleteResponse {}        -> done mid op req
-             Type.ModifyDnResponse {}      -> done mid op req
-             Type.CompareResponse {}       -> done mid op req
-             Type.ExtendedResponse {}      -> probablyDisconnect mid op req
-             Type.IntermediateResponse {}  -> saveUp mid op req
-           return (res, counter)
-      ])
- where
-  saveUp mid op res =
-    return (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
+dispatch reqq inq outq = loop (Map.empty, 1)
+  where
+    saveUp mid op res = return (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
 
-  done mid op req =
-    case Map.lookup mid req of
-      Nothing -> return req
-      Just (stack, var) -> do
-        putTMVar var (op :| stack)
-        return (Map.delete mid req)
+    loop (!req, !counter) =
+      loop =<< atomically (asum
+        [ do New new var <- readTQueue reqq
+             writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
+             return (Map.insert (Type.Id counter) ([], var) req, counter + 1)
+        , do Type.LdapMessage mid op _
+                <- readTQueue inq
+             res <- case op of
+               Type.BindResponse {}          -> done mid op req
+               Type.SearchResultEntry {}     -> saveUp mid op req
+               Type.SearchResultReference {} -> return req
+               Type.SearchResultDone {}      -> done mid op req
+               Type.ModifyResponse {}        -> done mid op req
+               Type.AddResponse {}           -> done mid op req
+               Type.DeleteResponse {}        -> done mid op req
+               Type.ModifyDnResponse {}      -> done mid op req
+               Type.CompareResponse {}       -> done mid op req
+               Type.ExtendedResponse {}      -> probablyDisconnect mid op req
+               Type.IntermediateResponse {}  -> saveUp mid op req
+             return (res, counter)
+        ])
 
-  probablyDisconnect (Type.Id 0)
-                     (Type.ExtendedResponse
-                       (Type.LdapResult code
-                                        (Type.LdapDn (Type.LdapString dn))
-                                        (Type.LdapString reason)
-                                        _)
-                       moid _)
-                     req =
-    case moid of
-      Just (Type.LdapOid oid)
-        | Oid oid == noticeOfDisconnectionOid -> throwSTM (Disconnect code (Dn dn) reason)
-      _ -> return req
-  probablyDisconnect mid op req = done mid op req
+    done mid op req =
+      case Map.lookup mid req of
+        Nothing -> return req
+        Just (stack, var) -> do
+          putTMVar var (op :| stack)
+          return (Map.delete mid req)
 
-wrap :: IO a -> IO a
-wrap m = m `catch` (throwIO . WrappedIOError)
+    probablyDisconnect (Type.Id 0)
+                      (Type.ExtendedResponse
+                        (Type.LdapResult code
+                                          (Type.LdapDn (Type.LdapString dn))
+                                          (Type.LdapString reason)
+                                          _)
+                        moid _)
+                      req =
+      case moid of
+        Just (Type.LdapOid oid)
+          | Oid oid == noticeOfDisconnectionOid -> throwSTM (Disconnect code (Dn dn) reason)
+        _ -> return req
+    probablyDisconnect mid op req = done mid op req

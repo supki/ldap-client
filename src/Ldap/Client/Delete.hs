@@ -31,7 +31,7 @@ import           Ldap.Client.Internal
 -- | Perform the Delete operation synchronously. Raises 'ResponseError' on failures.
 delete :: Ldap -> Dn -> IO ()
 delete l dn =
-  raise =<< deleteEither l dn
+  eitherToIO =<< deleteEither l dn
 
 -- | Perform the Delete operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
