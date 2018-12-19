@@ -21,6 +21,7 @@ module Ldap.Client
   , insecureTlsSettings
   , PortNumber
   , Ldap
+  , LdapH
   , LdapError(..)
   , ResponseError(..)
   , Type.ResultCode(..)
@@ -142,23 +143,24 @@ newtype LdapH = LdapH Ldap
 
 -- | Provide a 'LdapH' to a function needing an 'Ldap' handle.
 runsIn :: (Ldap -> IO a)
-        -> Ldap
-        -> IO a
-runsIn act ldap@Ldap{workers} = do
+       -> LdapH
+       -> IO a
+runsIn act (LdapH ldap) = do
   actor <- Async.async (act ldap)
-  r <- Async.waitEitherCatch workers actor
+  r <- Async.waitEitherCatch (workers ldap) actor
   case r of
     Left (Right _a) -> error "Unreachable"
     Left (Left e)   -> throwIO (repackEx e)
     Right (Right r') -> pure r'
     Right (Left e)  -> throwIO e
 
+-- | Provide a 'LdapH' to a function needing an 'Ldap' handle
 runsInEither :: (Ldap -> IO a)
              -> LdapH
              -> IO (Either LdapError a)
 runsInEither act (LdapH ldap) = do
   actor <- Async.async (act ldap)
-  r <- Async.waitEitherCatch workers actor
+  r <- Async.waitEitherCatch (workers ldap) actor
   case r of
     Left (Right _a) -> error "Unreachable"
     Left (Left e)   -> pure (Left (repackEx e))
@@ -179,11 +181,7 @@ with host port act = bracket (open host port) close (runsInEither act)
 -- | Creates an LDAP handle. This action is useful for creating your own resource
 -- management, such as with 'resource-pool'. The handle must be manually closed
 -- with 'close'.
---
--- If you use this low-level primitive, the handle should be provided to a function
--- '(Ldap -> IO a)' using 'runsIn' or 'runsInEither', otherwise errors from the
--- workers will not propagate to the main thread.
-open :: Host -> PortNumber -> IO (Ldap)
+open :: Host -> PortNumber -> IO (LdapH)
 open host port = do
   context <- Conn.initConnectionContext
   conn <- Conn.connectTo context params
@@ -204,7 +202,7 @@ open host port = do
   -- exchange exceptions between the entire worker group and another thread.
   workers <- Async.async (snd <$> Async.waitAnyCancel [inW, outW, dispW])
 
-  pure (Ldap reqQ workers conn)
+  pure (LdapH (Ldap reqQ workers conn))
  where
   params = Conn.ConnectionParams
     { Conn.connectionHostname =
@@ -221,11 +219,11 @@ open host port = do
 
 -- | Closes an LDAP connection.
 -- This is to be used in together with 'open'.
-close :: Ldap -> IO ()
-close ldap@(Ldap _token workers conn) = do
+close :: LdapH -> IO ()
+close (LdapH ldap) = do
   unbindAsync ldap
-  Conn.connectionClose conn
-  Async.cancel workers
+  Conn.connectionClose (conn ldap)
+  Async.cancel (workers ldap)
 
 defaultTlsSettings :: Conn.TLSSettings
 defaultTlsSettings = Conn.TLSSettingsSimple
