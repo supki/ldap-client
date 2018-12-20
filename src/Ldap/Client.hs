@@ -74,7 +74,7 @@ import qualified Control.Concurrent.Async as Async
 import           Control.Concurrent.STM (atomically, throwSTM)
 import           Control.Concurrent.STM.TMVar (putTMVar)
 import           Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, writeTQueue, readTQueue)
-import           Control.Exception (Exception, bracket, throwIO, SomeException, fromException)
+import           Control.Exception (Exception, bracket, throwIO, SomeException, fromException, throw, Handler(..))
 import           Control.Monad (forever)
 import           Data.Void (Void)
 import qualified Data.ASN1.BinaryEncoding as Asn1
@@ -86,7 +86,6 @@ import           Data.Foldable (asum)
 import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
 import           Data.Monoid (Endo(appEndo))
 import           Data.Text (Text)
 #if __GLASGOW_HASKELL__ < 710
@@ -126,16 +125,16 @@ import           Ldap.Client.Extended (Oid(..), extended, noticeOfDisconnectionO
 
 -- | Various failures that can happen when working with LDAP.
 data LdapError
-  = WorkerError !SomeException   -- ^ Network failure.
+  = IOError !IOError             -- ^ Network failure.
   | ParseError !Asn1.ASN1Error   -- ^ Invalid ASN.1 data received from the server.
   | ResponseError !ResponseError -- ^ An LDAP operation failed.
   | DisconnectError !Disconnect  -- ^ Notice of Disconnection has been received.
-    deriving Show
+    deriving (Show, Eq)
 
 instance Exception LdapError
 
 data Disconnect = Disconnect !Type.ResultCode !Dn !Text
-    deriving (Show, Typeable)
+    deriving (Show, Eq, Typeable)
 
 instance Exception Disconnect
 
@@ -150,9 +149,9 @@ runsIn act (LdapH ldap) = do
   r <- Async.waitEitherCatch (workers ldap) actor
   case r of
     Left (Right _a) -> error "Unreachable"
-    Left (Left e)   -> throwIO (repackEx e)
+    Left (Left e)   -> throwIO =<< catchesHandler workerErr e
     Right (Right r') -> pure r'
-    Right (Left e)  -> throwIO e
+    Right (Left e)  -> throwIO =<< catchesHandler respErr e
 
 -- | Provide a 'LdapH' to a function needing an 'Ldap' handle
 runsInEither :: (Ldap -> IO a)
@@ -163,12 +162,27 @@ runsInEither act (LdapH ldap) = do
   r <- Async.waitEitherCatch (workers ldap) actor
   case r of
     Left (Right _a) -> error "Unreachable"
-    Left (Left e)   -> pure (Left (repackEx e))
+    Left (Left e)   -> do Left <$> catchesHandler workerErr e
     Right (Right r') -> pure (Right r')
-    Right (Left e)  -> throwIO e
+    Right (Left e)  -> do Left <$> catchesHandler respErr e
 
-repackEx :: SomeException -> LdapError
-repackEx e = fromMaybe (WorkerError e) (fromException e)
+
+workerErr :: [Handler LdapError]
+workerErr = [ Handler (\(ex :: IOError) -> pure (IOError ex))
+            , Handler (\(ex :: Asn1.ASN1Error) -> pure (ParseError ex))
+            , Handler (\(ex :: Disconnect) -> pure (DisconnectError ex))
+            ]
+
+respErr :: [Handler LdapError]
+respErr = [ Handler (\(ex :: ResponseError) -> pure (ResponseError ex))
+          ]
+
+catchesHandler :: [Handler a] -> SomeException -> IO a
+catchesHandler handlers e = foldr tryHandler (throw e) handlers
+    where tryHandler (Handler handler) res
+              = case fromException e of
+                Just e' -> handler e'
+                Nothing -> res
 
 -- | The entrypoint into LDAP.
 with' :: Host -> PortNumber -> (Ldap -> IO a) -> IO a
