@@ -11,6 +11,7 @@ import           Control.Applicative (Alternative(..), liftA2, optional)
 import           Control.Applicative (Applicative(..), Alternative(..), liftA2, optional)
 #endif
 import           Control.Monad (MonadPlus(..), (>=>), guard)
+import qualified Control.Monad.Fail as Fail
 import           Data.ASN1.Types (ASN1)
 import qualified Data.ASN1.Types as Asn1
 import           Data.Foldable (asum)
@@ -409,6 +410,9 @@ instance Monad (Parser s) where
   return x = Parser (\s -> return (s, x))
   Parser mx >>= k =
     Parser (mx >=> \(s', x) -> unParser (k x) s')
+  fail = Fail.fail
+
+instance Fail.MonadFail (Parser s) where
   fail _ = empty
 
 instance MonadPlus (Parser s) where
