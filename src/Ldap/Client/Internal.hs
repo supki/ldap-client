@@ -35,7 +35,7 @@ import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
 import           Data.Typeable (Typeable)
-import           Network (PortNumber)
+import           Network.Socket (PortNumber)
 import           Network.Connection (TLSSettings)
 
 import qualified Ldap.Asn1.Type as Type
