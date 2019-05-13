@@ -139,7 +139,7 @@ instance Exception Disconnect
 -- | The entrypoint into LDAP.
 --
 -- It catches all LDAP-related exceptions.
-with :: Host -> PortNumber -> (Ldap -> IO a) -> IO (Either LdapError a)
+with :: Host -> Int -> (Ldap -> IO a) -> IO (Either LdapError a)
 with host port f = do
   context <- Conn.initConnectionContext
   bracket (Conn.connectTo context params) Conn.connectionClose (\conn ->
@@ -164,7 +164,7 @@ with host port f = do
         case host of
           Plain h -> h
           Tls   h _ -> h
-    , Conn.connectionPort = port
+    , Conn.connectionPort = fromIntegral port
     , Conn.connectionUseSecure =
         case host of
           Plain  _ -> Nothing
