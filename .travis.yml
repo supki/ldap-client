@@ -1,27 +1,20 @@
-language: c
+language: haskell
 
 sudo: false
 
+git:
+  depth: 5
+
+cache:
+  directories:
+    - "$HOME/.cabal/store"
+
 matrix:
   include:
-    - env: CABALVER=1.16 GHCVER=7.6.3
-      addons: {apt: {packages: [cabal-install-1.16,ghc-7.6.3], sources: [hvr-ghc]}}
-    - env: CABALVER=1.18 GHCVER=7.8.4
-      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=7.10.3 RUN_TESTS=--run-tests
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3],sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=8.0.1 RUN_TESTS=--run-tests
-      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1],sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=head RUN_TESTS=--run-tests
-      addons: {apt: {packages: [cabal-install-head,ghc-head],  sources: [hvr-ghc]}}
-
-  allow_failures:
-    - env: CABALVER=1.16 GHCVER=7.6.3 # weird spec problems
-    - env: CABALVER=1.18 GHCVER=7.8.4 # weird spec problems
-    - env: CABALVER=head GHCVER=head RUN_TESTS=--run-tests
-
-before_install:
-  - export PATH=$HOME/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+    - ghc: 8.0.1
+    - ghc: 8.2.2
+    - ghc: 8.4.4
+    - ghc: 8.6.5
 
 install:
   - cabal update

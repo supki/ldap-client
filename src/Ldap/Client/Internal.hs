@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Ldap.Client.Internal
@@ -35,7 +36,11 @@ import           Data.ByteString (ByteString)
 import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
 import           Data.Typeable (Typeable)
+#if __GLASGOW_HASKELL__ >= 84
+import           Network.Socket (PortNumber)
+#else
 import           Network (PortNumber)
+#endif
 import           Network.Connection (TLSSettings)
 
 import qualified Ldap.Asn1.Type as Type
