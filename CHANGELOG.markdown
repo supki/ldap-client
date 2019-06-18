@@ -1,5 +1,6 @@
-next
+Original Changelog
 ====
+  * See `CHANGELOG.md` for recent changes
 
 0.2.0
 =====
