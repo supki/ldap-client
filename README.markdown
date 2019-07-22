@@ -1,7 +1,7 @@
 ldap-client
 ===========
 [![Hackage](https://budueba.com/hackage/ldap-client)](https://hackage.haskell.org/package/ldap-client)
-[![Build Status](https://travis-ci.org/supki/ldap-client.svg?branch=master)](https://travis-ci.org/supki/ldap-client)
+[![Build Status](https://travis-ci.org/alasconnect/ldap-client.svg?branch=master)](https://travis-ci.org/alasconnect/ldap-client)
 
 This library implements (the parts of) [RFC 4511][rfc4511]
 
