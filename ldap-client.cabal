@@ -3,7 +3,7 @@ version:             0.3.0
 synopsis:            Pure Haskell LDAP Client Library
 description:
   Pure Haskell LDAP client library implementing (the parts of) RFC 4511.
-homepage:            https://supki.github.io/ldap-client
+homepage:            https://github.com/alasconnect/ldap-client
 license:             BSD2
 license-file:        LICENSE
 author:              Matvey Aksenov, AlasConnect LLC
