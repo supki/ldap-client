@@ -31,7 +31,7 @@ import           Ldap.Client.Internal
 -- | Perform the Add operation synchronously. Raises 'ResponseError' on failures.
 add :: Ldap -> Dn -> AttrList NonEmpty -> IO ()
 add l dn as =
-  raise =<< addEither l dn as
+  eitherToIO =<< addEither l dn as
 
 -- | Perform the Add operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
