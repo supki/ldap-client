@@ -6,3 +6,4 @@ release-branch=master
 since-tag=0.2.0
 
 header=# LDAP Client Changelog
+exclude-labels=documentation
