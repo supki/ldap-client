@@ -1,8 +1,9 @@
 # LDAP Client Changelog
 
-## [Unreleased](https://github.com/alasconnect/ldap-client/tree/HEAD)
 
-[Full Changelog](https://github.com/alasconnect/ldap-client/compare/0.3.0...HEAD)
+## [0.4.0](https://github.com/alasconnect/ldap-client/tree/0.4.0) (2019-11-07)
+
+[Full Changelog](https://github.com/alasconnect/ldap-client/compare/0.3.0...0.4.0)
 
 **Merged pull requests:**
 
