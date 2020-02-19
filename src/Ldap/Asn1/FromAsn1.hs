@@ -412,7 +412,9 @@ instance Monad (Parser s) where
   return x = Parser (\s -> return (s, x))
   Parser mx >>= k =
     Parser (mx >=> \(s', x) -> unParser (k x) s')
+#if !__GLASGOW_HASKELL__ >= 86
   fail _ = empty
+#endif
 
 instance MonadPlus (Parser s) where
   mzero = Parser (\_ -> mzero)
