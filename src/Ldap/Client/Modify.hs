@@ -48,7 +48,7 @@ data Operation =
 -- | Perform the Modify operation synchronously. Raises 'ResponseError' on failures.
 modify :: Ldap -> Dn -> [Operation] -> IO ()
 modify l dn as =
-  raise =<< modifyEither l dn as
+  eitherToIO =<< modifyEither l dn as
 
 -- | Perform the Modify operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
@@ -98,7 +98,7 @@ newtype RelativeDn = RelativeDn Text
 -- | Perform the Modify DN operation synchronously. Raises 'ResponseError' on failures.
 modifyDn :: Ldap -> Dn -> RelativeDn -> Bool -> Maybe Dn -> IO ()
 modifyDn l dn rdn del new =
-  raise =<< modifyDnEither l dn rdn del new
+  eitherToIO =<< modifyDnEither l dn rdn del new
 
 -- | Perform the Modify DN operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.

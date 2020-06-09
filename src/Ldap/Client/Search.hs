@@ -52,7 +52,7 @@ import           Ldap.Client.Internal
 -- | Perform the Search operation synchronously. Raises 'ResponseError' on failures.
 search :: Ldap -> Dn -> Mod Search -> Filter -> [Attr] -> IO [SearchEntry]
 search l base opts flt attributes =
-  raise =<< searchEither l base opts flt attributes
+  eitherToIO =<< searchEither l base opts flt attributes
 
 -- | Perform the Search operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.

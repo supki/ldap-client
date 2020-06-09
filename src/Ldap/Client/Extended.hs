@@ -54,7 +54,7 @@ instance IsString Oid where
 -- | Perform the Extended operation synchronously. Raises 'ResponseError' on failures.
 extended :: Ldap -> Oid -> Maybe ByteString -> IO ()
 extended l oid mv =
-  raise =<< extendedEither l oid mv
+  eitherToIO =<< extendedEither l oid mv
 
 -- | Perform the Extended operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
@@ -92,7 +92,7 @@ extendedResult req res = Left (ResponseInvalid req res)
 -- | An example of @Extended Operation@, cf. 'extended'.
 startTls :: Ldap -> IO ()
 startTls =
-  raise <=< startTlsEither
+  eitherToIO <=< startTlsEither
 
 -- | An example of @Extended Operation@, cf. 'extendedEither'.
 startTlsEither :: Ldap -> IO (Either ResponseError ())

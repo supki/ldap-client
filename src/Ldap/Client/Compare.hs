@@ -33,7 +33,7 @@ import qualified Ldap.Asn1.Type as Type
 -- | Perform the Compare operation synchronously. Raises 'ResponseError' on failures.
 compare :: Ldap -> Dn -> Attr -> AttrValue -> IO Bool
 compare l dn k v =
-  raise =<< compareEither l dn k v
+  eitherToIO =<< compareEither l dn k v
 
 -- | Perform the Compare operation synchronously. Returns @Left e@ where
 -- @e@ is a 'ResponseError' on failures.
