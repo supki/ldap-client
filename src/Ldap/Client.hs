@@ -15,6 +15,7 @@ module Ldap.Client
   , runsIn
   , runsInEither
   , open
+  , openFromConnection
   , close
   , Host(..)
   , defaultTlsSettings
@@ -198,6 +199,23 @@ open :: Host -> PortNumber -> IO (LdapH)
 open host port = do
   context <- Conn.initConnectionContext
   conn <- Conn.connectTo context params
+  openFromConnection conn
+ where
+  params = Conn.ConnectionParams
+    { Conn.connectionHostname =
+        case host of
+          Plain h -> h
+          Tls   h _ -> h
+    , Conn.connectionPort = port
+    , Conn.connectionUseSecure =
+        case host of
+          Plain  _ -> Nothing
+          Tls _ settings -> pure settings
+    , Conn.connectionUseSocks = Nothing
+    }
+
+openFromConnection :: Connection -> IO (LdapH)
+openFromConnection conn = do
   reqQ <- newTQueueIO
   inQ  <- newTQueueIO
   outQ <- newTQueueIO
@@ -216,19 +234,6 @@ open host port = do
   workers <- Async.async (snd <$> Async.waitAnyCancel [inW, outW, dispW])
 
   pure (LdapH (Ldap reqQ workers conn))
- where
-  params = Conn.ConnectionParams
-    { Conn.connectionHostname =
-        case host of
-          Plain h -> h
-          Tls   h _ -> h
-    , Conn.connectionPort = port
-    , Conn.connectionUseSecure =
-        case host of
-          Plain  _ -> Nothing
-          Tls _ settings -> pure settings
-    , Conn.connectionUseSocks = Nothing
-    }
 
 -- | Closes an LDAP connection.
 -- This is to be used in together with 'open'.
