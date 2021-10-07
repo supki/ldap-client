@@ -1,5 +1,21 @@
 # LDAP Client Changelog
 
+## [0.4.2](https://github.com/alasconnect/ldap-client/tree/0.4.2) (2021-10-07)
+
+[Full Changelog](https://github.com/alasconnect/ldap-client/compare/0.4.1...0.4.2)
+
+**Merged pull requests:**
+
+- add openFromConnection to expose Connection [\#6](https://github.com/alasconnect/ldap-client/pull/6) ([jecaro](https://github.com/jecaro))
+
+## [0.4.1](https://github.com/alasconnect/ldap-client/tree/0.4.1) (2020-06-09)
+
+[Full Changelog](https://github.com/alasconnect/ldap-client/compare/0.4.0...0.4.1)
+
+**Merged pull requests:**
+
+- Version bump and TravisCI GHC [\#5](https://github.com/alasconnect/ldap-client/pull/5) ([boj](https://github.com/boj))
+- only implement fail for old ghc version [\#4](https://github.com/alasconnect/ldap-client/pull/4) ([glatteis](https://github.com/glatteis))
 
 ## [0.4.0](https://github.com/alasconnect/ldap-client/tree/0.4.0) (2019-11-07)
 
