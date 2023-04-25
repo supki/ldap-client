@@ -59,9 +59,6 @@ module Ldap.Client
   , NonEmpty
   ) where
 
-#if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative ((<$>))
-#endif
 import qualified Control.Concurrent.Async as Async
 import           Control.Concurrent.STM (atomically, throwSTM)
 import           Control.Concurrent.STM.TMVar (putTMVar)
@@ -79,9 +76,6 @@ import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Map.Strict as Map
 import           Data.Monoid (Endo(appEndo))
 import           Data.Text (Text)
-#if __GLASGOW_HASKELL__ < 710
-import           Data.Traversable (traverse)
-#endif
 import           Data.Typeable (Typeable)
 import           Network.Connection (Connection)
 import qualified Network.Connection as Conn

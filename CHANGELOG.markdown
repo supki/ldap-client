@@ -1,8 +1,12 @@
-next
-====
+0.3.0
+===
+
+  * Supported lts-19.33 (GHC 9.0.2)
+
+  * The package got stolen by an already dead company (KEKW), so I had to rename it
 
 0.2.0
-=====
+===
 
   * Supported SASL authentication via the EXTERNAL mechanism. (https://github.com/supki/ldap-client/pull/9)
 

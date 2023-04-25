@@ -2,9 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Ldap.Client.BindSpec (spec) where
 
-#if __GLASGOW_HASKELL__ < 710
-import           Data.Monoid (mempty)
-#endif
 import           Test.Hspec
 import qualified Ldap.Asn1.Type as Ldap.Type
 import           Ldap.Client as Ldap

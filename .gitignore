@@ -1,8 +1,8 @@
 dist/
-.cabal-sandbox/
-cabal.sandbox.config
 node_modules
 Gemfile.lock
 *~
 *.swp
 /result
+stack.yaml.lock
+.stack-work/

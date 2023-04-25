@@ -5,11 +5,7 @@ module Ldap.Asn1.FromAsn1
   , FromAsn1
   ) where
 
-#if __GLASGOW_HASKELL__ >= 710
 import           Control.Applicative (Alternative(..), liftA2, optional)
-#else
-import           Control.Applicative (Applicative(..), Alternative(..), liftA2, optional)
-#endif
 import           Control.Monad (MonadPlus(..), (>=>), guard)
 import           Data.ASN1.Types (ASN1)
 import qualified Data.ASN1.Types as Asn1
@@ -409,6 +405,8 @@ instance Monad (Parser s) where
   return x = Parser (\s -> return (s, x))
   Parser mx >>= k =
     Parser (mx >=> \(s', x) -> unParser (k x) s')
+
+instance MonadFail (Parser s) where
   fail _ = empty
 
 instance MonadPlus (Parser s) where

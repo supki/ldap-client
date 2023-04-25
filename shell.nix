@@ -1,23 +1,20 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc802" }: let
-  inherit (nixpkgs) pkgs;
-  haskell = pkgs.haskell.packages.${compiler};
+{ pkgs ? import <nixpkgs> { }
+, ghc ? pkgs.haskell.compiler.ghc8107
+, stack ? pkgs.stack
+}:
 
-  ghc = haskell.ghcWithPackages(ps: [
-    ps.hdevtools ps.doctest ps.hspec-discover ps.hlint ps.ghc-mod
-  ]);
-  npm = import ./npm {};
+pkgs.mkShell rec {
+  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
 
-  this = import ./default.nix { inherit nixpkgs compiler; };
-in
-  pkgs.stdenv.mkDerivation rec {
-    name = this.pname;
-    buildInputs = [
-      ghc
-      haskell.cabal-install
-      npm.nodePackages.ldapjs
-    ] ++ this.env.buildInputs;
-    shellHook = ''
-      ${this.env.shellHook}
-      cabal configure --enable-tests --package-db=$NIX_GHC_LIBDIR/package.conf.d
-    '';
-  }
+  buildInputs = with pkgs; [
+    ghc
+    glibcLocales
+    gmp
+    nodejs
+    stack
+    zlib
+  ];
+
+  shellHook = ''
+  '';
+}

@@ -39,11 +39,6 @@ import           Data.Int (Int32)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Maybe (mapMaybe)
-#if __GLASGOW_HASKELL__ >= 710
-import           Data.Semigroup (Semigroup(..))
-#else
-import           Data.Semigroup (Semigroup(..), Monoid(..))
-#endif
 
 import qualified Ldap.Asn1.Type as Type
 import           Ldap.Client.Internal
