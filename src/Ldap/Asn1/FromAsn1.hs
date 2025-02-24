@@ -5,7 +5,7 @@ module Ldap.Asn1.FromAsn1
   , FromAsn1
   ) where
 
-import           Control.Applicative (Alternative(..), liftA2, optional)
+import           Control.Applicative (Alternative(..), optional)
 import           Control.Monad (MonadPlus(..), (>=>), guard)
 import           Data.ASN1.Types (ASN1)
 import qualified Data.ASN1.Types as Asn1
@@ -47,13 +47,13 @@ LDAPMessage ::= SEQUENCE {
      controls       [0] Controls OPTIONAL }
 @
 -}
-instance FromAsn1 op =>  FromAsn1 (LdapMessage op) where
+instance FromAsn1 op => FromAsn1 (LdapMessage op) where
   fromAsn1 = do
     Asn1.Start Asn1.Sequence <- next
     i  <- fromAsn1
     op <- fromAsn1
     Asn1.End Asn1.Sequence <- next
-    return (LdapMessage i op Nothing)
+    pure (LdapMessage i op Nothing)
 
 {- |
 @
@@ -63,7 +63,7 @@ MessageID ::= INTEGER (0 ..  maxInt)
 instance FromAsn1 Id where
   fromAsn1 = do
     Asn1.IntVal i <- next
-    return (Id (fromIntegral i))
+    pure (Id (fromIntegral i))
 
 {- |
 @
@@ -74,7 +74,7 @@ instance FromAsn1 LdapString where
   fromAsn1 = do
     Asn1.OctetString s <- next
     case Text.decodeUtf8' s of
-      Right t -> return (LdapString t)
+      Right t -> pure (LdapString t)
       Left  _ -> empty
 
 {- |
@@ -86,7 +86,7 @@ instance FromAsn1 LdapOid where
   fromAsn1 = do
     Asn1.OctetString s <- next
     case Text.decodeUtf8' s of
-      Right t -> return (LdapOid t)
+      Right t -> pure (LdapOid t)
       Left  _ -> empty
 
 {- |
@@ -113,7 +113,7 @@ AttributeValue ::= OCTET STRING
 instance FromAsn1 AttributeValue where
   fromAsn1 = do
     Asn1.OctetString s <- next
-    return (AttributeValue s)
+    pure (AttributeValue s)
 
 {- |
 @
@@ -130,7 +130,7 @@ instance FromAsn1 PartialAttribute where
     vs <- many fromAsn1
     Asn1.End Asn1.Set <- next
     Asn1.End Asn1.Sequence <- next
-    return (PartialAttribute d vs)
+    pure (PartialAttribute d vs)
 
 {- |
 @
@@ -240,8 +240,8 @@ instance FromAsn1 LdapResult where
       Asn1.Start (Asn1.Container Asn1.Context 0) <- next
       x <- fromAsn1
       Asn1.End (Asn1.Container Asn1.Context 0) <- next
-      return x
-    return (LdapResult resultCode matchedDn diagnosticMessage referral)
+      pure x
+    pure (LdapResult resultCode matchedDn diagnosticMessage referral)
 
 {- |
 @
@@ -253,7 +253,7 @@ instance FromAsn1 ReferralUris where
     Asn1.Start Asn1.Sequence <- next
     xs <- some1 fromAsn1
     Asn1.End Asn1.Sequence <- next
-    return (ReferralUris xs)
+    pure (ReferralUris xs)
 
 {- |
 @
@@ -333,31 +333,31 @@ instance FromAsn1 ProtocolServerOp where
       Asn1.Start (Asn1.Container Asn1.Application 19) <- next
       uris <- some1 fromAsn1
       Asn1.End (Asn1.Container Asn1.Application 19) <- next
-      return (SearchResultReference uris)
+      pure (SearchResultReference uris)
 
     , do
       Asn1.Start (Asn1.Container Asn1.Application 24) <- next
       res <- fromAsn1
       utf8Name <- optional $ do
         Asn1.Other Asn1.Context 10 s <- next
-        return s
-      name <- maybe (return Nothing) (\n -> case Text.decodeUtf8' n of
+        pure s
+      name <- maybe (pure Nothing) (\n -> case Text.decodeUtf8' n of
         Left  _    -> empty
-        Right name -> return (Just name)) utf8Name
+        Right name -> pure (Just name)) utf8Name
       value <- optional $ do
         Asn1.Other Asn1.Context 11 s <- next
-        return s
+        pure s
       Asn1.End (Asn1.Container Asn1.Application 24) <- next
-      return (ExtendedResponse res (fmap LdapOid name) value)
+      pure (ExtendedResponse res (fmap LdapOid name) value)
 
     , do
       Asn1.Start (Asn1.Container Asn1.Application 25) <- next
       name  <- optional fromAsn1
       value <- optional $ do
         Asn1.OctetString s <- next
-        return s
+        pure s
       Asn1.End (Asn1.Container Asn1.Application 25) <- next
-      return (IntermediateResponse name value)
+      pure (IntermediateResponse name value)
     ]
    where
     app l = do
@@ -366,7 +366,7 @@ instance FromAsn1 ProtocolServerOp where
       res <- fromAsn1
       Asn1.End (Asn1.Container Asn1.Application y) <- next
       guard (y == l)
-      return res
+      pure res
 
 {- |
 @
@@ -378,7 +378,7 @@ instance FromAsn1 PartialAttributeList where
     Asn1.Start Asn1.Sequence <- next
     xs <- many fromAsn1
     Asn1.End Asn1.Sequence <- next
-    return (PartialAttributeList xs)
+    pure (PartialAttributeList xs)
 
 instance (FromAsn1 a, FromAsn1 b) => FromAsn1 (a, b) where
   fromAsn1 = liftA2 (,) fromAsn1 fromAsn1
@@ -402,7 +402,6 @@ instance Alternative (Parser s) where
     Parser (\s -> ma s <|> mb s)
 
 instance Monad (Parser s) where
-  return x = Parser (\s -> return (s, x))
   Parser mx >>= k =
     Parser (mx >=> \(s', x) -> unParser (k x) s')
 

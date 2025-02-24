@@ -108,13 +108,13 @@ sendRequest :: Ldap -> (Response -> Either ResponseError a) -> Request -> STM (A
 sendRequest l p msg =
   do var <- newEmptyTMVar
      writeRequest l var msg
-     return (Async (fmap p (readTMVar var)))
+     pure (Async (fmap p (readTMVar var)))
 
 writeRequest :: Ldap -> TMVar Response -> Request -> STM ()
 writeRequest Ldap { client } var msg = writeTQueue client (New msg var)
 
 raise :: Exception e => Either e a -> IO a
-raise = either throwIO return
+raise = either throwIO pure
 
 
 -- | Terminate the connection to the Directory.

@@ -1,3 +1,10 @@
+0.4.0
+===
+
+  * I don't think a major version bump was strictly necessary, but did it anyway to be on the safe side.
+
+  * Supported lts-22.43 (GHC 9.6.6)
+
 0.3.0
 ===
 

@@ -148,9 +148,9 @@ with host port f = do
         ]
       fmap (Right . snd) (Async.waitAnyCancel as)))
  `catches`
-  [ Handler (\(WrappedIOError e) -> return (Left (IOError e)))
-  , Handler (return . Left . ParseError)
-  , Handler (return . Left . ResponseError)
+  [ Handler (\(WrappedIOError e) -> pure (Left (IOError e)))
+  , Handler (pure . Left . ParseError)
+  , Handler (pure . Left . ResponseError)
   ]
  where
   params = Conn.ConnectionParams
@@ -194,7 +194,7 @@ input inq conn = wrap . flip fix [] $ \loop chunks -> do
         Right asn1 -> do
           flip fix asn1 $ \loop' asn1' ->
             case parseAsn1 asn1' of
-              Nothing -> return ()
+              Nothing -> pure ()
               Just (asn1'', a) -> do
                 atomically (writeTQueue inq a)
                 loop' asn1''
@@ -217,13 +217,13 @@ dispatch Ldap { client } inq outq =
     loop =<< atomically (asum
       [ do New new var <- readTQueue client
            writeTQueue outq (Type.LdapMessage (Type.Id counter) new Nothing)
-           return (Map.insert (Type.Id counter) ([], var) req, counter + 1)
+           pure (Map.insert (Type.Id counter) ([], var) req, counter + 1)
       , do Type.LdapMessage mid op _
                <- readTQueue inq
            res <- case op of
              Type.BindResponse {}          -> done mid op req
              Type.SearchResultEntry {}     -> saveUp mid op req
-             Type.SearchResultReference {} -> return req
+             Type.SearchResultReference {} -> pure req
              Type.SearchResultDone {}      -> done mid op req
              Type.ModifyResponse {}        -> done mid op req
              Type.AddResponse {}           -> done mid op req
@@ -232,18 +232,18 @@ dispatch Ldap { client } inq outq =
              Type.CompareResponse {}       -> done mid op req
              Type.ExtendedResponse {}      -> probablyDisconnect mid op req
              Type.IntermediateResponse {}  -> saveUp mid op req
-           return (res, counter)
+           pure (res, counter)
       ])
  where
   saveUp mid op res =
-    return (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
+    pure (Map.adjust (\(stack, var) -> (op : stack, var)) mid res)
 
   done mid op req =
     case Map.lookup mid req of
-      Nothing -> return req
+      Nothing -> pure req
       Just (stack, var) -> do
         putTMVar var (op :| stack)
-        return (Map.delete mid req)
+        pure (Map.delete mid req)
 
   probablyDisconnect (Type.Id 0)
                      (Type.ExtendedResponse
@@ -256,7 +256,7 @@ dispatch Ldap { client } inq outq =
     case moid of
       Just (Type.LdapOid oid)
         | Oid oid == noticeOfDisconnectionOid -> throwSTM (Disconnect code (Dn dn) reason)
-      _ -> return req
+      _ -> pure req
   probablyDisconnect mid op req = done mid op req
 
 wrap :: IO a -> IO a

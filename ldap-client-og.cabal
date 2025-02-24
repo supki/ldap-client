@@ -1,95 +1,88 @@
-name:                ldap-client-og
-version:             0.3.0
-synopsis:            Pure Haskell LDAP Client Library
-description:
-  Pure Haskell LDAP client library implementing (the parts of) RFC 4511.
-homepage:            https://supki.github.io/ldap-client
-license:             BSD2
-license-file:        LICENSE
-author:              Matvey Aksenov
-maintainer:          matvey.aksenov@gmail.com
-copyright:           2015 Matvey Aksenov
-category:            Network
-build-type:          Simple
-cabal-version:       >= 1.10
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           ldap-client-og
+version:        0.4.0
+synopsis:       Pure Haskell LDAP Client Library
+description:    Pure Haskell LDAP client library implementing (parts of) RFC 4511.
+category:       Network
+homepage:       https://github.com/supki/ldap-client#readme
+bug-reports:    https://github.com/supki/ldap-client/issues
+maintainer:     matvey.aksenov@gmail.com
+copyright:      Matvey Aksenov 2015
+license:        BSD2
+license-file:   LICENSE
+build-type:     Simple
 tested-with:
-    GHC == 7.6.3
-  , GHC == 7.8.4
-  , GHC == 7.10.1
-  , GHC == 8.0.1
+    GHC==9.6.6
 extra-source-files:
-  README.markdown
-  CHANGELOG.markdown
+    README.markdown
+    CHANGELOG.markdown
 
 source-repository head
-  type:     git
-  location: git@github.com:supki/ldap-client
-  tag:      0.3.0
+  type: git
+  location: https://github.com/supki/ldap-client
 
 library
-  ghc-options:
-    -Wall
-    -fwarn-incomplete-uni-patterns
-    -fwarn-incomplete-record-updates
-    -fwarn-unrecognised-pragmas
-  default-language:
-    Haskell2010
-  hs-source-dirs:
-    src
   exposed-modules:
-    Ldap.Asn1.FromAsn1
-    Ldap.Asn1.ToAsn1
-    Ldap.Asn1.Type
-    Ldap.Client
-    Ldap.Client.Add
-    Ldap.Client.Bind
-    Ldap.Client.Compare
-    Ldap.Client.Delete
-    Ldap.Client.Extended
-    Ldap.Client.Internal
-    Ldap.Client.Modify
-    Ldap.Client.Search
+      Ldap.Asn1.FromAsn1
+      Ldap.Asn1.ToAsn1
+      Ldap.Asn1.Type
+      Ldap.Client
+      Ldap.Client.Add
+      Ldap.Client.Bind
+      Ldap.Client.Compare
+      Ldap.Client.Delete
+      Ldap.Client.Extended
+      Ldap.Client.Internal
+      Ldap.Client.Modify
+      Ldap.Client.Search
+  other-modules:
+      Paths_ldap_client_og
+  hs-source-dirs:
+      src
+  ghc-options: -funbox-strict-fields -Wall -Wno-incomplete-uni-patterns
   build-depends:
-      asn1-encoding >= 0.9
-    , asn1-types    >= 0.3
+      asn1-encoding
+    , asn1-types
     , async
-    , base          >= 4.6 && < 5
+    , base >=4.18 && <5
     , bytestring
-    , connection    >= 0.2
     , containers
-    , network       >= 2.6
-    , semigroups    >= 0.16
+    , crypton-connection
+    , network
+    , semigroups
     , stm
     , text
+  default-language: Haskell2010
 
 test-suite spec
-  ghc-options:
-    -Wall
-    -fwarn-incomplete-uni-patterns
-    -fwarn-incomplete-record-updates
-    -fwarn-unrecognised-pragmas
-  default-language:
-    Haskell2010
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    test
-  main-is:
-    Spec.hs
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
   other-modules:
-    Ldap.ClientSpec
-    Ldap.Client.AddSpec
-    Ldap.Client.BindSpec
-    Ldap.Client.CompareSpec
-    Ldap.Client.DeleteSpec
-    Ldap.Client.ExtendedSpec
-    Ldap.Client.ModifySpec
-    Ldap.Client.SearchSpec
-    SpecHelper
+      Ldap.Client.AddSpec
+      Ldap.Client.BindSpec
+      Ldap.Client.CompareSpec
+      Ldap.Client.DeleteSpec
+      Ldap.Client.ExtendedSpec
+      Ldap.Client.ModifySpec
+      Ldap.Client.SearchSpec
+      Ldap.ClientSpec
+      SpecHelper
+      Paths_ldap_client_og
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wno-incomplete-uni-patterns -threaded -with-rtsopts=-N
+  build-tool-depends:
+      hspec-discover:hspec-discover
   build-depends:
-      base          >= 4.6 && < 5
+      base >=4.18 && <5
     , bytestring
     , hspec
-    , ldap-client
+    , ldap-client-og
     , process
     , semigroups
+  default-language: Haskell2010
