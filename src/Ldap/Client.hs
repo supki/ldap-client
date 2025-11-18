@@ -70,6 +70,7 @@ import qualified Data.ASN1.Encoding as Asn1
 import qualified Data.ASN1.Error as Asn1
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Lazy as ByteString.Lazy
+import           Data.Default (def)
 import           Data.Foldable (asum)
 import           Data.Function (fix)
 import           Data.List.NonEmpty (NonEmpty((:|)))
@@ -79,6 +80,8 @@ import           Data.Text (Text)
 import           Data.Typeable (Typeable)
 import           Network.Connection (Connection)
 import qualified Network.Connection as Conn
+import qualified Network.TLS as Tls
+import qualified Network.TLS.Extra as Tls (ciphersuite_default)
 import           Prelude hiding (compare)
 import qualified System.IO.Error as IO
 
@@ -166,11 +169,21 @@ with host port f = do
     , Conn.connectionUseSocks = Nothing
     }
 
+-- Due to crypton-connection's API (inherited from connection) being
+-- a hot pile of garbage, we don't have a simple, convenient, and safe way
+-- to override the very simple default TLS connection settings. Instead, we
+-- have to painfully copy whatever is going on in
+--
+-- https://hackage-content.haskell.org/package/crypton-connection-0.4.5/docs/src/Network.Connection.Types.html#line-95
+--
+-- (or a newer version) and fiddle with it. Our fiddling also always breaks
+-- on pretty much any changes in crypton-connection related to TLSSEttings.
 defaultTlsSettings :: Conn.TLSSettings
 defaultTlsSettings = Conn.TLSSettingsSimple
   { Conn.settingDisableCertificateValidation = False
   , Conn.settingDisableSession = False
   , Conn.settingUseServerName = False
+  , Conn.settingClientSupported = def {Tls.supportedCiphers = Tls.ciphersuite_default}
   }
 
 insecureTlsSettings :: Conn.TLSSettings
@@ -178,6 +191,7 @@ insecureTlsSettings = Conn.TLSSettingsSimple
   { Conn.settingDisableCertificateValidation = True
   , Conn.settingDisableSession = False
   , Conn.settingUseServerName = False
+  , Conn.settingClientSupported = def {Tls.supportedCiphers = Tls.ciphersuite_default}
   }
 
 input :: FromAsn1 a => TQueue a -> Connection -> IO b

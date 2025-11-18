@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -53,10 +53,12 @@ library
     , bytestring
     , containers
     , crypton-connection
+    , data-default
     , network
     , semigroups
     , stm
     , text
+    , tls
   default-language: Haskell2010
 
 test-suite spec

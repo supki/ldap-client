@@ -1,3 +1,10 @@
+0.5.0
+===
+
+  * Supported lts-23.28 (GHC 9.8.4)
+
+  * tls update broke us
+
 0.4.0
 ===
 

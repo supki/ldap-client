@@ -1,5 +1,5 @@
 name: ldap-client-og
-version: 0.4.0
+version: 0.5.0
 synopsis: Pure Haskell LDAP Client Library
 description: Pure Haskell LDAP client library implementing (parts of) RFC 4511.
 category: Network
@@ -22,12 +22,14 @@ library:
     - asn1-types
     - async
     - bytestring
-    - crypton-connection
     - containers
+    - crypton-connection
+    - data-default
     - network
     - semigroups
     - stm
     - text
+    - tls
   source-dirs:
     src
   ghc-options:
